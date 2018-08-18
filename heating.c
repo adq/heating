@@ -22,6 +22,9 @@
 
 #define MESSAGE_RETRIES 8
 
+#define ASKVOLTAGE_SECS (60*60)
+#define DESIREDTEMP_SECS (60*60)
+
 #define OT_JOIN_RESP	0x6A
 #define OT_JOIN_CMD		0xEA
 
@@ -107,14 +110,13 @@ struct RadiatorSensor {
 
     double voltage;
     time_t voltageRxStamp;
-    time_t voltageTxStamp;
 };
 
 struct RadiatorSensor sensors[] = {
-    {"frontroom", 2441, 17, 0, 0, 0, 0, 0, 0},
-    {"kitchen",   3702, 17, 0, 0, 0, 0, 0, 0},
-    {"hall",      4173, 17, 0, 0, 0, 0, 0, 0},
-    {"bedroom",   3809, 17, 0, 0, 0, 0, 0, 0},
+    {"frontroom", 2441, 17, 0, 0, 0, 0, 0},
+    {"kitchen",   3702, 17, 0, 0, 0, 0, 0},
+    {"hall",      4173, 17, 0, 0, 0, 0, 0},
+    {"bedroom",   3809, 17, 0, 0, 0, 0, 0},
 };
 
 
@@ -377,9 +379,6 @@ void txRequestVoltage(struct RadiatorSensor *sensor) {
                        0
                       };
     tx(txbuf, sizeof(txbuf));
-    sensor->voltageTxStamp = time(NULL);
-
-    printf("TX getvoltage\n");
 }
 
 
@@ -394,8 +393,6 @@ void txDesiredTemperature(struct RadiatorSensor *sensor) {
                       };
     tx(txbuf, sizeof(txbuf));
     sensor->temperatureTxStamp = time(NULL);
-
-    printf("TX temp\n");
 }
 
 
@@ -404,16 +401,6 @@ void txIdentify(uint32_t sensorid) {
                        sensorid >> 8,
                        sensorid,
                        OT_IDENTIFY,
-                       0
-                      };
-    tx(txbuf, sizeof(txbuf));
-}
-
-
-void txNull(struct RadiatorSensor *sensor) {
-    uint8_t txbuf[] = {sensor->sensorid >> 16,
-                       sensor->sensorid >> 8,
-                       sensor->sensorid,
                        0
                       };
     tx(txbuf, sizeof(txbuf));
@@ -575,12 +562,10 @@ int main(int argc, char *argv[]) {
 
         // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
         // otherwise be sleeeeeeping!
-        if ((time(NULL) - sensor->temperatureTxStamp) > (60*60)) {
+        if ((time(NULL) - sensor->temperatureTxStamp) > DESIREDTEMP_SECS) {
             txDesiredTemperature(sensor);
-        } else if ((time(NULL) - sensor->voltageTxStamp) > (60*60)) {
+        } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
             txRequestVoltage(sensor);
-        } else {
-            txNull(sensor);
         }
 
         clearFIFO();
