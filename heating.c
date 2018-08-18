@@ -111,10 +111,10 @@ struct RadiatorSensor {
 };
 
 struct RadiatorSensor sensors[] = {
-    {"frontroom", 2441, 20, 0, 0, 0, 0, 0, 0},
-    {"kitchen",   3702, 20, 0, 0, 0, 0, 0, 0},
-    {"hall",      4173, 20, 0, 0, 0, 0, 0, 0},
-    {"bedroom",   3809, 20, 0, 0, 0, 0, 0, 0},
+    {"frontroom", 2441, 17, 0, 0, 0, 0, 0, 0},
+    {"kitchen",   3702, 17, 0, 0, 0, 0, 0, 0},
+    {"hall",      4173, 17, 0, 0, 0, 0, 0, 0},
+    {"bedroom",   3809, 17, 0, 0, 0, 0, 0, 0},
 };
 
 
@@ -378,6 +378,8 @@ void txRequestVoltage(struct RadiatorSensor *sensor) {
                       };
     tx(txbuf, sizeof(txbuf));
     sensor->voltageTxStamp = time(NULL);
+
+    printf("TX getvoltage\n");
 }
 
 
@@ -392,6 +394,8 @@ void txDesiredTemperature(struct RadiatorSensor *sensor) {
                       };
     tx(txbuf, sizeof(txbuf));
     sensor->temperatureTxStamp = time(NULL);
+
+    printf("TX temp\n");
 }
 
 
@@ -571,9 +575,9 @@ int main(int argc, char *argv[]) {
 
         // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
         // otherwise be sleeeeeeping!
-        if ((sensor->temperatureTxStamp - time(NULL)) > (60*60)) {
+        if ((time(NULL) - sensor->temperatureTxStamp) > (60*60)) {
             txDesiredTemperature(sensor);
-        } else if ((sensor->voltageTxStamp - time(NULL)) > (60*60)) {
+        } else if ((time(NULL) - sensor->voltageTxStamp) > (60*60)) {
             txRequestVoltage(sensor);
         } else {
             txNull(sensor);
