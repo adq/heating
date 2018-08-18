@@ -6,6 +6,7 @@
 #include <time.h>
 #include <getopt.h>
 #include <assert.h>
+#include <pthread.h>
 
 
 #define RESET_PIN RPI_V2_GPIO_P1_22
@@ -433,6 +434,42 @@ void rxVoltage(struct RadiatorSensor *sensor, uint8_t *buf, int buflen) {
 }
 
 
+void *writeCsv(void*arg) {
+    char tbuf[20];
+    char filename[256];
+    struct tm tresult;
+
+    while(1) {
+        sleep(60);
+
+        // format filename correctly for current day
+        time_t now = time(NULL);
+        strftime(tbuf, 20, "%Y-%m-%d", localtime_r(&now, &tresult));
+        sprintf(filename, "/tmp/%s.csv", tbuf);
+        FILE *f = fopen(filename, "a");
+        if (!f) {
+            continue;
+        }
+
+        // write out a line per sensor
+        for(int i=0; i<sizeof(sensors) / sizeof(struct RadiatorSensor); i++) {
+            fprintf(f, "%s,%i,%g,%g,%i,%i,%g,%i\n",
+                    sensors[i].name,
+                    sensors[i].sensorid,
+                    sensors[i].desiredTemperature,
+                    sensors[i].temperature,
+                    sensors[i].temperatureTxStamp,
+                    sensors[i].temperatureRxStamp,
+                    sensors[i].voltage,
+                    sensors[i].voltageRxStamp);
+        }
+
+        fflush(f);
+        fclose(f);
+    }
+}
+
+
 int main(int argc, char *argv[]) {
     uint8_t rxbuf[256];
     int pktlen, i;
@@ -440,6 +477,7 @@ int main(int argc, char *argv[]) {
     double numvalue;
     uint32_t identifySensorId = 0;
     int opt;
+    pthread_t csvthread;
 
 
     // parse args
@@ -463,6 +501,9 @@ int main(int argc, char *argv[]) {
     }
     resetRFModules();
     spiMode();
+
+    // start up the csv writer!
+    pthread_create(&csvthread, NULL, writeCsv, NULL);
 
     // init the 433 Mhz module
     bcm2835_spi_chipSelect(CS_433MHZ);
