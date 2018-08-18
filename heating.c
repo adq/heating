@@ -186,7 +186,7 @@ void setRxMode() {
 }
 
 
-void configFSK() {
+void configOpenThingsFSK() {
     // FSK modulation scheme
     writeReg(0x02, 0x00);
 
@@ -224,6 +224,49 @@ void configFSK() {
 
     // node address
     writeReg(0x39, 0x04);
+
+    // FIFO TX threshold : at least 1 byte
+    writeReg(0x3C, 0x81);
+
+    setRxMode();
+}
+
+
+void configSalusFSK() {
+    // FSK modulation scheme
+    writeReg(0x02, 0x00);
+
+    // frequency deviation 75kHz (round(75000 / (32000000 / math.pow(2,19))))
+    writeReg(0x05, 0x04);
+    writeReg(0x06, 0xcd);
+
+    // carrier frequency 868.260Mhz (round(868260000 / (32000000 / math.pow(2,19))))
+    writeReg(0x07, 0xd9);
+    writeReg(0x08, 0x10);
+    writeReg(0x09, 0xa4);
+
+    // standard AFC
+    writeReg(0x0B, 0x00);
+
+    // 50Ohms
+    writeReg(0x18, 0x08);
+
+    // channel filter bandwidth 0xkHz
+    writeReg(0x19, 0x43);
+
+    // preamble LSB 3 bytes
+    writeReg(0x2d, 0x03);
+
+    // sync config
+    writeReg(0x2e, 0x88);
+    writeReg(0x2f, 0x2d);
+    writeReg(0x30, 0xd4);
+
+    // packet config (variable length)
+    writeReg(0x37, 0x80);
+
+    // max payload length
+    writeReg(0x38, 0x40);
 
     // FIFO TX threshold : at least 1 byte
     writeReg(0x3C, 0x81);
@@ -507,9 +550,11 @@ int main(int argc, char *argv[]) {
 
     // init the 433 Mhz module
     bcm2835_spi_chipSelect(CS_433MHZ);
-    configFSK();
+    configOpenThingsFSK();
     clearFIFO();
 
+
+    // main loop
     while(1) {
         // wait for data
         if (!(readReg(0x28) & 0x04)) {
