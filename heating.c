@@ -20,6 +20,7 @@
 
 #define PID_ENERGENIE 0xf2
 
+#define MESSAGE_RETRIES 8
 
 #define OT_JOIN_RESP	0x6A
 #define OT_JOIN_CMD		0xEA
@@ -109,17 +110,11 @@ struct RadiatorSensor {
     time_t voltageTxStamp;
 };
 
-
-// 4173
-// 3809
-// 2441
-// 3702
-
 struct RadiatorSensor sensors[] = {
-    {"frontroom", 0, 20, 0, 0, 0, 0, 0, 0},
-    {"kitchen",   0, 20, 0, 0, 0, 0, 0, 0},
-    {"hall",      0, 20, 0, 0, 0, 0, 0, 0},
-    {"bedroom",   0, 20, 0, 0, 0, 0, 0, 0},
+    {"frontroom", 2441, 20, 0, 0, 0, 0, 0, 0},
+    {"kitchen",   3702, 20, 0, 0, 0, 0, 0, 0},
+    {"hall",      4173, 20, 0, 0, 0, 0, 0, 0},
+    {"bedroom",   3809, 20, 0, 0, 0, 0, 0, 0},
 };
 
 
@@ -327,6 +322,7 @@ struct RadiatorSensor *findSensor(uint32_t sensorid) {
 void tx(uint8_t *msg, uint8_t msglen) {
     uint16_t pip = rand();
     uint16_t ran;
+    int i;
 
     uint8_t txbuf[256];
     txbuf[0] = 5 + msglen + 3 - 1;  // -1 as we do not include the length field itself
@@ -344,29 +340,28 @@ void tx(uint8_t *msg, uint8_t msglen) {
     txbuf[5 + msglen + 1] = bufcrc >> 8;
     txbuf[5 + msglen + 2] = bufcrc;
 
-    for(int i=0; i < 5 + msglen + 3; i++) {
-        printf("%02x\n", txbuf[i]);
-    }
-    printf("%04x\n", crc(txbuf + 5, msglen + 3));
-
     // encrypt the message
     seedcrypt(&ran, PID_ENERGENIE, pip);
-    for(int i=0; i < msglen + 3; i++) {
+    for(i=0; i < msglen + 3; i++) {
         txbuf[5 + i] = cryptbyte(&ran, txbuf[5 + i]);
     }
 
     // send it
     setTxMode();
-    writeRegMultibyte(0, txbuf, 5 + msglen + 3);
 
-    // wait for it to be sent
-    while(!(readReg(0x28) & 0x08)) {
-        usleep(1000);
+    // send it (multiple times)
+    for(i=0; i < MESSAGE_RETRIES; i++) {
+        writeRegMultibyte(0, txbuf, 5 + msglen + 3);
+
+        // check FIFO level
+        while(readReg(0x28) & 0x20) {
+            usleep(1000);
+        }
     }
 
-    // check it finished
-    if (readReg(0x28) & 0x50) {
-        printf("Didn't write all bytes!\n");
+    // wait for FIFO to empty itself
+    while(readReg(0x28) & 0x40) {
+        usleep(1000);
     }
 
     // aaand back to rx mode again
@@ -411,11 +406,23 @@ void txIdentify(uint32_t sensorid) {
 }
 
 
+void txNull(struct RadiatorSensor *sensor) {
+    uint8_t txbuf[] = {sensor->sensorid >> 16,
+                       sensor->sensorid >> 8,
+                       sensor->sensorid,
+                       0
+                      };
+    tx(txbuf, sizeof(txbuf));
+}
+
+
 void rxTemperature(struct RadiatorSensor *sensor, uint8_t *buf, int buflen) {
     double numvalue;
     if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
         return;
     }
+
+    printf("SENSOR %s(%i) temp %g\n", sensor->name, sensor->sensorid, numvalue);
 
     sensor->temperatureRxStamp = time(NULL);
     sensor->temperature = numvalue;
@@ -427,6 +434,8 @@ void rxVoltage(struct RadiatorSensor *sensor, uint8_t *buf, int buflen) {
     if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
         return;
     }
+
+    printf("SENSOR %s(%i) voltage %g\n", sensor->name, sensor->sensorid, numvalue);
 
     sensor->voltageRxStamp = time(NULL);
     sensor->voltage = numvalue;
@@ -523,12 +532,11 @@ int main(int argc, char *argv[]) {
         // deal with identification if we've been asked to
         if (identifySensorId) {
             if (sensorid == identifySensorId) {
-                fprintf(stderr, "Requesting sensor %i to identify itself\n", sensorid);
+                fprintf(stderr, ":) Requesting sensor %i to identify itself\n", sensorid);
                 txIdentify(sensorid);
-                break;
+            } else {
+                fprintf(stderr, ":( Ignoring sensor %i in identify mode\n", sensorid);
             }
-
-            fprintf(stderr, "Ignoring sensor %i in identify mode\n", sensorid);
             clearFIFO();
             continue;
         }
@@ -567,6 +575,8 @@ int main(int argc, char *argv[]) {
             txDesiredTemperature(sensor);
         } else if ((sensor->voltageTxStamp - time(NULL)) > (60*60)) {
             txRequestVoltage(sensor);
+        } else {
+            txNull(sensor);
         }
 
         clearFIFO();
