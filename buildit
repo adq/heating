@@ -1,3 +1,0 @@
-#!/bin/sh
-
-gcc -o heating heating.c -lbcm2835

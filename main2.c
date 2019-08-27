@@ -240,10 +240,10 @@ void configSalusFSK() {
     writeReg(0x05, 0x04);
     writeReg(0x06, 0xcd);
 
-    // carrier frequency 868.260Mhz (round(868260000 / (32000000 / math.pow(2,19))))
+    // carrier frequency 868.260Mhz (round(868300000 / (32000000 / math.pow(2,19))))
     writeReg(0x07, 0xd9);
-    writeReg(0x08, 0x10);
-    writeReg(0x09, 0xa4);
+    writeReg(0x08, 0x11);
+    writeReg(0x09, 0xec);
 
     // standard AFC
     writeReg(0x0B, 0x00);
@@ -252,7 +252,7 @@ void configSalusFSK() {
     writeReg(0x18, 0x08);
 
     // channel filter bandwidth 0xkHz
-    writeReg(0x19, 0x43);
+    writeReg(0x19, 0x57);
 
     // preamble LSB 3 bytes
     writeReg(0x2d, 0x03);
@@ -545,6 +545,56 @@ int main(int argc, char *argv[]) {
     resetRFModules();
     spiMode();
 
+
+    /*
+    // init the 868 Mhz module
+    bcm2835_spi_chipSelect(CS_868MHZ);
+    configSalusFSK();
+    clearFIFO();
+
+    // test turning it on
+    uint8_t txbuf[] = {0x18, 0x01, 0x19, 0x5a}; // on
+    // uint8_t txbuf[] = {0x18, 0x02, 0x1a, 0x5a}; // off
+
+    setTxMode();
+    for(i=0; i < 30; i++) {
+        writeRegMultibyte(0, txbuf, sizeof(txbuf));
+
+        // check FIFO level
+        while(readReg(0x28) & 0x20) {
+            usleep(1000);
+        }
+
+	usleep(30000);
+    }
+    while(readReg(0x28) & 0x40) {
+        usleep(1000);
+    }
+    setRxMode();
+
+
+    printf("OK\n");
+
+    while(1) {
+        // wait for data
+        if (!(readReg(0x28) & 0x04)) {
+            usleep(10000);
+            continue;
+        }
+
+        // extract packet data
+        pktlen = readReg(0x00);
+        assert(pktlen < sizeof(rxbuf));
+        for(i=0; i < pktlen; i++) {
+            printf("%02x ", readReg(0x00));
+        }
+        printf("\n");
+
+        clearFIFO();
+    }
+*/
+
+
     // start up the csv writer!
     pthread_create(&csvthread, NULL, writeCsv, NULL);
 
@@ -552,7 +602,6 @@ int main(int argc, char *argv[]) {
     bcm2835_spi_chipSelect(CS_433MHZ);
     configOpenThingsFSK();
     clearFIFO();
-
 
     // main loop
     while(1) {
@@ -659,3 +708,4 @@ int main(int argc, char *argv[]) {
 
     bcm2835_spi_end();
 }
+
