@@ -1,5 +1,5 @@
-#ifndef LOWLEVEL_H
-#define LOWLEVEL_H 1
+#ifndef HW_H
+#define HW_H 1
 
 #include <stdint.h>
 
@@ -12,5 +12,7 @@ void spiMode();
 void writeReg(uint8_t addr, uint8_t value);
 void writeRegMultibyte(uint8_t addr, uint8_t *values, uint8_t len);
 uint8_t readReg(uint8_t addr);
+void initHardware();
+void shutdownHardware();
 
 #endif

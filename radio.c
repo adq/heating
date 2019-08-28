@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include "radio.h"
-#include "lowlevel.h"
+#include "hw.h"
 
 
 void clearFIFO() {

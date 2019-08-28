@@ -4,7 +4,7 @@
 #include <string.h>
 #include "energenie.h"
 #include "radio.h"
-#include "lowlevel.h"
+#include "hw.h"
 
 
 void seedcrypt(uint16_t *ran, uint8_t pid, uint16_t pip) {

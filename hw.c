@@ -2,7 +2,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include "lowlevel.h"
+#include "pihw.h"
+#include "radio.h"
 
 
 void resetRFModules() {
@@ -44,4 +45,31 @@ uint8_t readReg(uint8_t addr) {
 
     bcm2835_spi_transfern(buf, 2);
     return buf[1];
+}
+
+
+void initHardware() {
+    // set everything up!
+    if (!bcm2835_init()) {
+        fprintf(stderr, "Cannot initialize BCM2835\n.");
+        exit(EXIT_FAILURE);
+    }
+    resetRFModules();
+    spiMode();
+
+    // init the 868 Mhz module
+    bcm2835_spi_chipSelect(CS_868MHZ);
+    configSalusFSK();
+    clearFIFO();
+
+    // init the 433 Mhz module
+    bcm2835_spi_chipSelect(CS_433MHZ);
+    configOpenThingsFSK();
+    clearFIFO();
+}
+
+
+void shutdownHardware() {
+    bcm2835_spi_end();
+    resetRFModules();
 }

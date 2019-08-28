@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <bcm2835.h>
 #include "energenie.h"
-#include "lowlevel.h"
+#include "hw.h"
 #include "radio.h"
 
 
@@ -63,91 +63,7 @@ void *writeCsv(void*arg) {
     }
 }
 
-
-int main(int argc, char *argv[]) {
-    uint8_t rxbuf[256];
-    int pktlen, i;
-    char strvalue[256];
-    double numvalue;
-    uint32_t identifySensorId = 0;
-    int opt;
-    pthread_t csvthread;
-
-
-    // parse args
-    while ((opt = getopt(argc, argv, "i:")) != -1) {
-        switch (opt) {
-        case 'i':
-            identifySensorId = atoi(optarg);
-            fprintf(stderr, "Waiting for sensor %i to appear...\n", identifySensorId);
-            break;
-
-        default:
-            fprintf(stderr, "Usage: %s [-i sensorid to identify]\n", argv[0]);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    // set everything up!
-    if (!bcm2835_init()) {
-        fprintf(stderr, "Cannot initialize BCM2835\n.");
-        exit(EXIT_FAILURE);
-    }
-    resetRFModules();
-    spiMode();
-
-    // init the 868 Mhz module
-    bcm2835_spi_chipSelect(CS_868MHZ);
-    configSalusFSK();
-    clearFIFO();
-
-
-    // test turning it on
-    uint8_t txbuf[] = {0x18, 0x01, 0x19, 0x5a};
-    setTxMode();
-    for(i=0; i < 30; i++) {
-        writeRegMultibyte(0, txbuf, sizeof(txbuf));
-
-        // check FIFO level
-        while(readReg(0x28) & 0x20) {
-            usleep(1000);
-        }
-        usleep(30000);
-    }
-    while(readReg(0x28) & 0x40) {
-        usleep(1000);
-    }
-    setRxMode();
-
-
-
-    while(1) {
-        // wait for data
-        if (!(readReg(0x28) & 0x04)) {
-            usleep(10000);
-            continue;
-        }
-
-        // extract packet data
-        pktlen = readReg(0x00);
-        assert(pktlen < sizeof(rxbuf));
-        for(i=0; i < pktlen; i++) {
-            printf("%02x ", readReg(0x00));
-        }
-        printf("\n");
-
-        clearFIFO();
-    }
-
-
-    // start up the csv writer!
-    pthread_create(&csvthread, NULL, writeCsv, NULL);
-
-    // init the 433 Mhz module
-    bcm2835_spi_chipSelect(CS_433MHZ);
-    configOpenThingsFSK();
-    clearFIFO();
-
+void mainLoop() {
     // main loop
     while(1) {
         // wait for data
@@ -250,6 +166,36 @@ int main(int argc, char *argv[]) {
 
         clearFIFO();
     }
+}
 
-    bcm2835_spi_end();
+int main(int argc, char *argv[]) {
+    uint8_t rxbuf[256];
+    int pktlen, i;
+    char strvalue[256];
+    double numvalue;
+    uint32_t identifySensorId = 0;
+    int opt;
+    pthread_t csvthread;
+
+
+    // parse args
+    while ((opt = getopt(argc, argv, "i:")) != -1) {
+        switch (opt) {
+        case 'i':
+            identifySensorId = atoi(optarg);
+            fprintf(stderr, "Waiting for sensor %i to appear...\n", identifySensorId);
+            break;
+
+        default:
+            fprintf(stderr, "Usage: %s [-i sensorid to identify]\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    initHardware();
+
+    pthread_create(&csvthread, NULL, writeCsv, NULL);
+    mainLoop();
+
+    shutdownHardware();
 }
