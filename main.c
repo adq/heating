@@ -193,7 +193,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    initHardware();
+    if (initHardware()) {
+        fprintf(stderr, "Cannot initialize BCM2835\n.");
+        exit(EXIT_FAILURE);
+    }
 
     pthread_create(&csvthread, NULL, writeCsv, NULL);
     mainLoop(identifySensorId);

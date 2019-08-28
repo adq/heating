@@ -49,11 +49,10 @@ uint8_t readReg(uint8_t addr) {
 }
 
 
-void initHardware() {
+int initHardware() {
     // set everything up!
     if (!bcm2835_init()) {
-        fprintf(stderr, "Cannot initialize BCM2835\n.");
-        exit(EXIT_FAILURE);
+        return 1;
     }
     resetRFModules();
     spiMode();
@@ -67,6 +66,8 @@ void initHardware() {
     bcm2835_spi_chipSelect(CS_433MHZ);
     configOpenThingsFSK();
     clearFIFO();
+
+    return 0;
 }
 
 
