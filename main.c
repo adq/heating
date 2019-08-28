@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include "energenie.h"
+#include "lowlevel.h"
 
 
 struct RadiatorSensor sensors[] = {
