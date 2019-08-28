@@ -63,7 +63,12 @@ void *writeCsv(void*arg) {
     }
 }
 
-void mainLoop() {
+void mainLoop(uint32_t identifySensorId) {
+    uint8_t rxbuf[256];
+    int pktlen, i;
+    char strvalue[256];
+    double numvalue;
+
     // main loop
     while(1) {
         // wait for data
@@ -169,10 +174,6 @@ void mainLoop() {
 }
 
 int main(int argc, char *argv[]) {
-    uint8_t rxbuf[256];
-    int pktlen, i;
-    char strvalue[256];
-    double numvalue;
     uint32_t identifySensorId = 0;
     int opt;
     pthread_t csvthread;
@@ -195,7 +196,7 @@ int main(int argc, char *argv[]) {
     initHardware();
 
     pthread_create(&csvthread, NULL, writeCsv, NULL);
-    mainLoop();
+    mainLoop(identifySensorId);
 
     shutdownHardware();
 }
