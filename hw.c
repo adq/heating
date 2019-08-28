@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
-#include "pihw.h"
+#include "hw.h"
 #include "radio.h"
 
 
