@@ -4,8 +4,10 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <assert.h>
+#include <bcm2835.h>
 #include "energenie.h"
 #include "lowlevel.h"
+#include "radio.h"
 
 
 struct RadiatorSensor sensors[] = {
