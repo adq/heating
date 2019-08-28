@@ -1,5 +1,5 @@
 heating:
-	gcc energenie.c pihw.c radio.c main.c -o heating -lbcm2835 -lpthread
+	gcc energenie.c hw.c radio.c main.c -o heating -lbcm2835 -lpthread
 
 
 clean:
