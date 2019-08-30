@@ -1,5 +1,5 @@
 #!/bin/sh
 
 git pull
-make clean
-make
+make salustest
+sudo ./salustest
