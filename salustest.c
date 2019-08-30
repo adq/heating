@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
     bcm2835_spi_chipSelect(CS_868MHZ);
 
     // test turning it on
-    uint8_t txbuf[] = {0x18, 0x01, 0x19, 0x5a}; // on
-    // uint8_t txbuf[] = {0x18, 0x02, 0x1a, 0x5a}; // off
+    uint8_t txbuf[] = {0x45, 0x01, 0x46, 0x55}; // on
+    // uint8_t txbuf[] = {0x45, 0x02, 0x47, 0x55}; // off
 
     while(1) {
         setTxMode();
