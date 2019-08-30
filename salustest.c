@@ -41,10 +41,11 @@ int main(int argc, char *argv[]) {
             usleep(1000);
         }
         setRxMode();
-
         printf("OK\n");
+
+        printf("PRESS A KEY\n");
+        getchar();
     }
 
     shutdownHardware();
 }
-\
