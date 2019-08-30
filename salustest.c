@@ -11,6 +11,7 @@
 
 
 int main(int argc, char *argv[]) {
+    int i;
 
     if (initHardware()) {
         fprintf(stderr, "Cannot initialize BCM2835\n.");
