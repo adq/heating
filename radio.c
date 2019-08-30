@@ -76,14 +76,18 @@ void configSalusFSK() {
     // FSK modulation scheme
     writeReg(0x02, 0x00);
 
+    // bit rate 2.4kbit hex(round(32000000 / 2400))
+    writeReg(0x03, 0x34);
+    writeReg(0x04, 0x15);
+
     // frequency deviation 75kHz (round(75000 / (32000000 / math.pow(2,19))))
     writeReg(0x05, 0x04);
     writeReg(0x06, 0xcd);
 
-    // carrier frequency 868.260Mhz (round(868280000 / (32000000 / math.pow(2,19))))
+    // carrier frequency 868.260Mhz (round(868260000 / (32000000 / math.pow(2,19))))
     writeReg(0x07, 0xd9);
-    writeReg(0x08, 0x11);
-    writeReg(0x09, 0xec);
+    writeReg(0x08, 0x10);
+    writeReg(0x09, 0xa4);
 
     // standard AFC
     writeReg(0x0B, 0x00);
@@ -92,7 +96,7 @@ void configSalusFSK() {
     writeReg(0x18, 0x08);
 
     // channel filter bandwidth 2.6kHz
-    writeReg(0x19, 0x57);
+    // writeReg(0x19, 0x57);   // FIXME
 
     // preamble LSB 3 bytes
     writeReg(0x2d, 0x03);
