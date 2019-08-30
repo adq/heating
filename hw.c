@@ -72,6 +72,6 @@ int initHardware() {
 
 
 void shutdownHardware() {
-    bcm2835_spi_end();
     resetRFModules();
+    bcm2835_spi_end();
 }
