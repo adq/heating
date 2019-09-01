@@ -86,8 +86,8 @@ void configSalusFSK() {
 
     // carrier frequency 868.260Mhz (round(868260000 / (32000000 / math.pow(2,19))))
     writeReg(0x07, 0xd9);
-    writeReg(0x08, 0x12);
-    writeReg(0x09, 0x4e);
+    writeReg(0x08, 0x10);
+    writeReg(0x09, 0xa4);
 
     // standard AFC
     writeReg(0x0B, 0x00);
