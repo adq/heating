@@ -80,8 +80,8 @@ void configSalusFSK() {
     writeReg(0x03, 0x34);
     writeReg(0x04, 0x15);
 
-    // frequency deviation 125kHz (round(75000 / (32000000 / math.pow(2,19))))
-    writeReg(0x05, 0x08);
+    // frequency deviation 125kHz (round(62500 / (32000000 / math.pow(2,19))))
+    writeReg(0x05, 0x04);
     writeReg(0x06, 0x00);
 
     // carrier frequency 868.260Mhz (round(868260000 / (32000000 / math.pow(2,19))))
