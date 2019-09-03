@@ -27,15 +27,14 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         setTxMode();
-        for(i=0; i < 30; i++) {
+        for(i=0; i < 10; i++) {
             writeRegMultibyte(0, txbuf, sizeof(txbuf));
 
             // check FIFO level
             while(readReg(0x28) & 0x20) {
                 usleep(1000);
             }
-
-        usleep(30000);
+            usleep(30000);
         }
         while(readReg(0x28) & 0x40) {
             usleep(1000);
