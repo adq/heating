@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
             while(!(readReg(0x28) & 0x08)) {
                 usleep(1000);
             }
-            usleep(30000);
+            usleep(100000);
         }
         setRxMode();
         printf("OK\n");
