@@ -95,9 +95,6 @@ void configSalusFSK() {
     // 50Ohms
     writeReg(0x18, 0x08);
 
-    // channel filter bandwidth 2.6kHz
-    // writeReg(0x19, 0x57);   // FIXME
-
     // preamble LSB 3 bytes
     writeReg(0x2d, 0x03);
 

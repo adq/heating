@@ -26,8 +26,8 @@ int main(int argc, char *argv[]) {
     // uint8_t txbuf[] = {0x45, 0x02, 0x47, 0x55}; // off
 
     while(1) {
+        setTxMode();
         for(i=0; i < 10; i++) {
-            setTxMode();
             writeRegMultibyte(0, txbuf, sizeof(txbuf));
 
             // check FIFO level
@@ -37,11 +37,11 @@ int main(int argc, char *argv[]) {
             while(!(readReg(0x28) & 0x08)) {
                 usleep(1000);
             }
-            usleep(100000);
-            setRxMode();
+            usleep(50000);
         }
-        printf("OK\n");
+        setRxMode();
 
+        printf("OK\n");
         printf("PRESS A KEY\n");
         getchar();
     }
