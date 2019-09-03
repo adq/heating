@@ -34,10 +34,10 @@ int main(int argc, char *argv[]) {
             while(readReg(0x28) & 0x20) {
                 usleep(1000);
             }
+            while(!(readReg(0x28) & 0x08)) {
+                usleep(1000);
+            }
             usleep(30000);
-        }
-        while(readReg(0x28) & 0x40) {
-            usleep(1000);
         }
         setRxMode();
         printf("OK\n");
