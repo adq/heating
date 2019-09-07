@@ -106,8 +106,8 @@ void configSalusFSK() {
     // packet config (fixed length, no coding etc)
     writeReg(0x37, 0x00);
 
-    // payload length 4
-    writeReg(0x38, 0x04);
+    // payload length 12
+    writeReg(0x38, 0x0C);
 
     // FIFO TX threshold : at least 1 byte
     writeReg(0x3C, 0x81);
