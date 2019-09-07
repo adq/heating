@@ -43,9 +43,9 @@ int main(int argc, char *argv[]) {
         for(i=0; i < 8; i++) {
             sendpacket(txbuf1, sizeof(txbuf1));
             usleep(30000);
-            sendpacket(txbuf1, sizeof(txbuf2));
+            sendpacket(txbuf2, sizeof(txbuf2));
             usleep(30000);
-            sendpacket(txbuf1, sizeof(txbuf3));
+            sendpacket(txbuf3, sizeof(txbuf3));
             usleep(30000);
         }
         setRxMode();
