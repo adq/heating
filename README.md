@@ -1,4 +1,4 @@
-This project is designed to control both my Energenie radiator valves and my Salus RT510TX boiler controller.
+This project is designed to control both my Energenie radiator valves and my Salus RT510RF / RT510TX boiler controller.
 
 It runs on a Raspberry Pi with an Energenie 433Mhz ENER314-RT 
 <https://energenie4u.co.uk/catalogue/product/ENER314-RT> two way radio controller board attached.
