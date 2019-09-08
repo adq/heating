@@ -22,7 +22,7 @@ entire product suite.
 
 
 ## Salus RT500 / RT510 protocol and code 
-
+I found a few other projects which controlled the RT500, but it appears the protocol used by the RT510 is different.
 
 ## References
 * Energenie library <https://github.com/Energenie/pyenergenie>
