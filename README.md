@@ -12,7 +12,7 @@ by attaching an 868Mhz RFM69CW to its SPI lines.
 This is so I can also control 868Mhz devices (such as my Salus RT510TX based boiler) as well.
 
 
-## Energenie code and protocol
+## Energenie protocol and code
 Energenie devices use the OpenThings protocol.
 
 The code for controlling the energenie valves is open source, but I found the various libraries impenetrable. 
