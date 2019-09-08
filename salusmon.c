@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    f = fopen("dump.txt", "w")
+    f = fopen("dump.txt", "w");
 
     // init the 868 Mhz module
     bcm2835_spi_chipSelect(CS_868MHZ);
