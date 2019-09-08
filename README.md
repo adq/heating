@@ -7,18 +7,19 @@ I modded my ENER314-RT board to attach an additional 868MHz radio so I can contr
 
 
 ## ENER314-RT 868 Mhz Hardware modification
+Looking at the ENER314-RT I realised it was using a HopeRF 433Mhz RFM69CW device.
 
-by attaching an 868Mhz RFM69CW to its SPI lines. 
-This is so I can also control 868Mhz devices (such as my Salus RT510TX based boiler) as well.
+I bought a similar HopeRF 866Mhz RFM69CW (and 866MHz helical antenna), and attached it to the same board using a different 
+SPI Chip Select line.
 
 
 ## Energenie protocol and code
 Energenie devices use the OpenThings protocol.
 
-The code for controlling the energenie valves is open source, but I found the various libraries impenetrable. 
+The code for controlling the energenie valves is open source, but I found the various libraries impenetrable. I decided to
+rewrite it in C.
 
-Therefore I decided to rewrite it myself in pure C. However, this rewrite only supports the radiator valves, not Energenie's 
-entire product suite.
+However, this rewrite only supports the radiator valves, not Energenie's entire product suite.
 
 
 ## Salus RT500 / RT510 protocol and code 
