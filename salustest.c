@@ -54,15 +54,15 @@ int main(int argc, char *argv[]) {
     while(1) {
         setTxMode();
 
-        txbuf1[0] = SYNC_ID >> 8;
+        txbuf1[0] = (uint8_t) (SYNC_ID >> 8);
         txbuf1[2] = calcchecksum(txbuf1, 2);
 
-        txbuf2[1] = SYNC_ID >> 8;
-        txbuf2[2] = SYNC_ID;
+        txbuf2[1] = (uint8_t) (SYNC_ID >> 8);
+        txbuf2[2] = (uint8_t) SYNC_ID;
         txbuf2[11] = calcchecksum(txbuf2, 11);
 
-        txbuf3[1] = SYNC_ID >> 8;
-        txbuf3[2] = SYNC_ID;
+        txbuf3[1] = (uint8_t) (SYNC_ID >> 8);
+        txbuf3[2] = (uint8_t) SYNC_ID;
         txbuf3[11] = calcchecksum(txbuf3, 11);
 
         for(i=0; i < 8; i++) {

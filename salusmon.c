@@ -24,6 +24,7 @@ void sendpacket(uint8_t *txbuf, int txbuflen) {
 
 int main(int argc, char *argv[]) {
     int i;
+    FILE *f;
 
     if (initHardware()) {
         fprintf(stderr, "Cannot initialize BCM2835\n.");
