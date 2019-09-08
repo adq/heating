@@ -42,7 +42,7 @@ struct __attribute__((__packed__)) salus_v2_message {
     uint8_t pairingcode_msb;
     uint8_t pairingcode_lsb;
     uint8_t command;
-    uint8_t padding[7];
+    uint8_t unknown[7];
     uint8_t checksum;
 };
 
