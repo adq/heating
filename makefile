@@ -3,7 +3,7 @@ heating:
 
 salustest:
 	gcc energenie.c hw.c radio.c salustest.c -o salustest -lbcm2835 -lpthread
-	gcc energenie.c hw.c radio.c salusmonc -o salusmon -lbcm2835 -lpthread
+	gcc energenie.c hw.c radio.c salusmon.c -o salusmon -lbcm2835 -lpthread
 
 
 clean:

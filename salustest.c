@@ -33,7 +33,7 @@ int calcchecksum(uint8_t * buf, int buflen) {
 }
 
 
-#define SYNC_ID 0x2f2d
+#define SYNC_ID (uint16_t) 0x2f2d
 
 int main(int argc, char *argv[]) {
     int i;
