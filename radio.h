@@ -1,6 +1,8 @@
 #ifndef RADIO_H
 #define RADIO_H 1
 
+#include <stdint.h>
+
 void clearFIFO();
 void setTxMode();
 void setRxMode();
