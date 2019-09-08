@@ -6,13 +6,17 @@ This is so I can also control 868Mhz devices (such as my Salus RT510TX based boi
 
 The intention is to control my Energenie radiator valves and my Salus RT510TX based boiler from the pi.
 
+## 868 Mhz Hardware modification.
+
+
+## Energenie code 
 The code for controlling the energenie valves is open source, but I found the various libraries impenetrable. 
 Therefore I decided to rewrite it myself in pure C. However, this rewrite only supports the radiator values, not Energenie's 
 entire product suite.
 
+## Salus protocol
 
 
-
-= References =
+## References
 * Energenie library <https://github.com/Energenie/pyenergenie>
 * Whaleygeek's energenie library <https://github.com/whaleygeek/pyenergenie>
