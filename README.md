@@ -6,7 +6,7 @@ This is so I can also control 868Mhz devices (such as my Salus RT510TX based boi
 
 The intention is to control my Energenie radiator valves and my Salus RT510TX based boiler from the pi.
 
-## 868 Mhz Hardware modification.
+## 868 Mhz Hardware modification
 
 
 ## Energenie code 
