@@ -26,7 +26,7 @@ int calcchecksum(uint8_t * buf, int buflen) {
     int i = 0;
     uint8_t checksum = 0;
     while (i < buflen) {
-        checksum += buf[i];
+        checksum += buf[i++];
     }
 
     return checksum;
@@ -56,6 +56,10 @@ int main(int argc, char *argv[]) {
 
         txbuf1[0] = (uint8_t) (SYNC_ID >> 8);
         txbuf1[2] = calcchecksum(txbuf1, 2);
+
+        printf("%02x\n", txbuf1[0]);
+        printf("%02x\n", txbuf1[1]);
+        printf("%02x\n", txbuf1[2]);
 
         txbuf2[1] = (uint8_t) (SYNC_ID >> 8);
         txbuf2[2] = (uint8_t) SYNC_ID;
