@@ -28,3 +28,5 @@ I found a few other projects which controlled the RT500, but it appears the prot
 ## References
 * Energenie library <https://github.com/Energenie/pyenergenie>
 * Whaleygeek's energenie library <https://github.com/whaleygeek/pyenergenie>
+* Cyclingengineer RT500RF project (dead) <http://the.cyclingengineer.co.uk/2013/11/23/home-automation-integrating-salus-rt500-rf-in-openhab-using-a-jeelink/>
+* Klattimer Arduino RT500RF project <https://github.com/klattimer/salus-rt500rf>
