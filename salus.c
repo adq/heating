@@ -66,29 +66,29 @@ void txSalusMessage(uint16_t pairingcode,
     memset(&msg1, 0x00, sizeof(struct salus_v1_message));
     msg1.command = salus_v1_command;
     msg1.pairing_code_msb = (uint8_t) (pairingcode >> 8);
-    msg1.checksum = salusChecksum(&msg1, 2);
+    msg1.checksum = salusChecksum((uint8_t*) &msg1, 2);
 
     memset(&msg2, 0x00, sizeof(struct salus_v2_message));
     msg2.prefix = 0xa5;
     msg2.command = salus_v2_command;
     msg2.pairingcode_msb = (uint8_t) (pairingcode >> 8);
     msg2.pairingcode_msb = (uint8_t) pairingcode;
-    msg2.checksum = salusChecksum(&msg2, 11);
+    msg2.checksum = salusChecksum((uint8_t*) &msg2, 11);
 
     memset(&msg2, 0x00, sizeof(struct salus_v2_message));
     msg2.prefix = 0xa7;
     msg2.command = salus_v2_command;
     msg2.pairingcode_msb = (uint8_t) (pairingcode >> 8);
     msg2.pairingcode_msb = (uint8_t) pairingcode;
-    msg2.checksum = salusChecksum(&msg2, 11);
+    msg2.checksum = salusChecksum((uint8_t*) &msg2, 11);
 
     setTxMode();
     for(int i=0; i < 8; i++) {
-        sendPacket(&msg1, 12);
+        sendPacket((uint8_t*) &msg1, 12);
         usleep(30000);
-        sendPacket(&msg2, 12);
+        sendPacket((uint8_t*) &msg2, 12);
         usleep(30000);
-        sendPacket(&msg3, 12);
+        sendPacket((uint8_t*) &msg3, 12);
         usleep(30000);
     }
     setRxMode();
