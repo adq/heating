@@ -95,6 +95,8 @@ void configSalusFSK() {
     // 50Ohms
     writeReg(0x18, 0x08);
 
+    writeReg(0x19, 0x43);
+
     // preamble LSB 3 bytes
     writeReg(0x2d, 0x03);
 
