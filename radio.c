@@ -26,6 +26,19 @@ void setRxMode() {
 }
 
 
+void sendPacket(uint8_t *txbuf, int txbuflen) {
+    writeRegMultibyte(0, txbuf, txbuflen);
+
+    // check FIFO level
+    while(readReg(0x28) & 0x20) {
+        usleep(1000);
+    }
+    while(!(readReg(0x28) & 0x08)) {
+        usleep(1000);
+    }
+}
+
+
 void configOpenThingsFSK() {
     // FSK modulation scheme
     writeReg(0x02, 0x00);
