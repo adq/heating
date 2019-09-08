@@ -30,7 +30,21 @@
  * 0x0b      -- checksum (simple sum of all other bytes mod 256)
  */
 
+struct __attribute__((__packed__)) salus_v1_message {
+    uint8_t pairing_code_msb;
+    uint8_t command;
+    uint8_t checksum;
+    uint8_t padding[9];
+};
 
+struct __attribute__((__packed__)) salus_v2_message {
+    uint8_t prefix;
+    uint8_t pairingcode_msb;
+    uint8_t pairingcode_lsb;
+    uint8_t command;
+    uint8_t padding[7];
+    uint8_t checksum;
+};
 
 uint8_t salusChecksum(uint8_t * buf, int buflen) {
     uint8_t i = 0;
@@ -42,50 +56,76 @@ uint8_t salusChecksum(uint8_t * buf, int buflen) {
     return checksum;
 }
 
-void txSalusMessage(uint16_t pairingcode, uint8_t *txbuf1, uint8_t *txbuf2, uint8_t *txbuf3) {
-    txbuf1[0] = (uint8_t) (pairingcode >> 8);
-    txbuf1[2] = salusChecksum(txbuf1, 2);
+void txSalusMessage(uint16_t pairingcode,
+                    uint8_t salus_v1_command,
+                    uint8_t salus_v2_command) {
+    struct salus_v1_message msg1;
+    struct salus_v2_message msg2;
+    struct salus_v2_message msg3;
 
-    txbuf2[1] = (uint8_t) (pairingcode >> 8);
-    txbuf2[2] = (uint8_t) pairingcode;
-    txbuf2[11] = salusChecksum(txbuf2, 11);
+    memset(&msg1, 0x00, sizeof(struct salus_v1_message));
+    msg1.command = salus_v1_command;
+    msg1.pairing_code_msb = (uint8_t) (pairingcode >> 8);
+    msg1.checksum = salusChecksum(&msg1, 2);
 
-    txbuf3[1] = (uint8_t) (pairingcode >> 8);
-    txbuf3[2] = (uint8_t) pairingcode;
-    txbuf3[11] = salusChecksum(txbuf3, 11);
+    memset(&msg2, 0x00, sizeof(struct salus_v2_message));
+    msg2.prefix = 0xa5;
+    msg2.command = salus_v2_command;
+    msg2.pairingcode_msb = (uint8_t) (pairingcode >> 8);
+    msg2.pairingcode_msb = (uint8_t) pairingcode;
+    msg2.checksum = salusChecksum(&msg2, 11);
+
+    memset(&msg2, 0x00, sizeof(struct salus_v2_message));
+    msg2.prefix = 0xa7;
+    msg2.command = salus_v2_command;
+    msg2.pairingcode_msb = (uint8_t) (pairingcode >> 8);
+    msg2.pairingcode_msb = (uint8_t) pairingcode;
+    msg2.checksum = salusChecksum(&msg2, 11);
 
     setTxMode();
     for(int i=0; i < 8; i++) {
-        sendPacket(txbuf1, 12);
+        sendPacket(&msg1, 12);
         usleep(30000);
-        sendPacket(txbuf2, 12);
+        sendPacket(&msg2, 12);
         usleep(30000);
-        sendPacket(txbuf3, 12);
+        sendPacket(&msg3, 12);
         usleep(30000);
     }
     setRxMode();
 }
 
 void txSalusPairing(uint16_t pairingcode) {
-    uint8_t txbuf1[] = {0x00, 0xAA, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    uint8_t txbuf2[] = {0xa5, 0x00, 0x04, 0xAA, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
-    uint8_t txbuf3[] = {0xa7, 0x00, 0x04, 0xAA, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+    // struct salus_v1_message msg1 = {command: 0xAA};
+    // struct salus_v2_message msg2 = {command: 0x04};
+    // struct salus_v2_message msg3 = {command: 0x04};
 
-    txSalusMessage(pairingcode, txbuf1, txbuf2, txbuf3);
+    // uint8_t txbuf1[] = {0x00, 0xAA, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    // uint8_t txbuf2[] = {0xa5, 0x00, 0x04, 0xAA, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+    // uint8_t txbuf3[] = {0xa7, 0x00, 0x04, 0xAA, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+
+    txSalusMessage(pairingcode, 0xAA, 0x04);
 }
 
 void txSalusBoilerOn(uint16_t pairingcode) {
-    uint8_t txbuf1[] = {0x00, 0x01, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    uint8_t txbuf2[] = {0xa5, 0x00, 0x00, 0x20, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
-    uint8_t txbuf3[] = {0xa7, 0x00, 0x00, 0x20, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+    // struct salus_v1_message msg1 = {command: 0x01};
+    // struct salus_v2_message msg2 = {command: 0x20};
+    // struct salus_v2_message msg3 = {command: 0x20};
 
-    txSalusMessage(pairingcode, txbuf1, txbuf2, txbuf3);
+    // uint8_t txbuf1[] = {0x00, 0x01, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    // uint8_t txbuf2[] = {0xa5, 0x00, 0x00, 0x20, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+    // uint8_t txbuf3[] = {0xa7, 0x00, 0x00, 0x20, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+
+    txSalusMessage(pairingcode, 0x01, 0x20);
 }
 
 void txSalusBoilerOff(uint16_t pairingcode) {
-    uint8_t txbuf1[] = {0x00, 0x02, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    uint8_t txbuf2[] = {0xa5, 0x00, 0x00, 0x00, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
-    uint8_t txbuf3[] = {0xa7, 0x00, 0x00, 0x00, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+    // struct salus_v1_message msg1 = {command: 0x02};
+    // struct salus_v2_message msg2 = {command: 0x00};
+    // struct salus_v2_message msg3 = {command: 0x00};
 
-    txSalusMessage(pairingcode, txbuf1, txbuf2, txbuf3);
+    // uint8_t txbuf1[] = {0x00, 0x02, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    // uint8_t txbuf2[] = {0xa5, 0x00, 0x00, 0x00, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+    // uint8_t txbuf3[] = {0xa7, 0x00, 0x00, 0x00, 0xd3, 0x09, 0xe8, 0x03, 0xb8, 0x0b, 0x32, 0x00};
+
+    txSalusMessage(pairingcode, 0x02, 0x00);
 }
