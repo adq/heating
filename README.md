@@ -12,6 +12,8 @@ Looking at the ENER314-RT I realised it was using a HopeRF 433Mhz RFM69CW device
 I bought a similar HopeRF 866Mhz RFM69CW (and 866MHz helical antenna), and attached it to the same board using a different 
 SPI Chip Select line.
 
+![pi wiring](https://raw.githubusercontent.com/adq/heating/master/pi-with-866mhz.jpg "Pi 866Mhz Wiring")
+
 
 ## Energenie protocol and code
 Energenie devices use the OpenThings protocol.
