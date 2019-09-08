@@ -7,4 +7,4 @@ salustest:
 
 
 clean:
-	rm -f heating salustest *~
+	rm -f heating salustest salusmon *~

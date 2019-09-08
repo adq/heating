@@ -32,6 +32,9 @@ int calcchecksum(uint8_t * buf, int buflen) {
     return checksum;
 }
 
+
+#define SYNC_ID 0x2f2d
+
 int main(int argc, char *argv[]) {
     int i;
 
@@ -42,8 +45,6 @@ int main(int argc, char *argv[]) {
 
     // init the 868 Mhz module
     bcm2835_spi_chipSelect(CS_868MHZ);
-
-    SYNC_ID = 0x2f2d
 
     // test turning it on
     uint8_t txbuf1[] = {0x47, 0x01, 0x4F, 0x55, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
