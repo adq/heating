@@ -33,33 +33,66 @@ void mosq_message_callback(struct mosquitto *mosq, void *obj, const struct mosqu
     int err;
     regmatch_t matches[3];
     char subtopic[256];
+    char value[256];
     uint16_t sensorid;
 
     if (err = regexec(&topic_regex, msg->topic, 3, matches, 0)) {
         fprintf(stderr, "Failed to match topic %s\n", msg->topic);
         return;
     }
-    sensorid = atoi(get_regex_match_string(msg->topic, &matches[1], subtopic));
-    get_regex_match_string(msg->topic, &matches[2], subtopic);
 
-    // ok, find the sensor
-    struct RadiatorSensor *sensor = findSensor(sensorid);
+    // extract the sensor
+    sensorid = atoi(get_regex_match_string(msg->topic, &matches[1], subtopic));
+    if (sensorid == 0) {
+        return;
+    }
+    struct RadiatorSensor *sensor = find_sensor(sensorid);
     if (!sensor) {
         return;
     }
 
-    // FIXME: extract supplied value
+    // extract the subtopic
+    get_regex_match_string(msg->topic, &matches[2], subtopic);
 
-    // fixme deal with incoming subtopics
+    // extract the value
+    memset(value, 0, sizeof(value));
+    strncpy(msg->payload, value, MIN(msg->payloadlen, sizeof(value) - 1));
+
+    // handle subtopics
     if (!strcmp(subtopic, "desired_temperature")) {
-        sensor->desiredTemperature = ??;
-        sensor->temperatureTxStamp = 0;
-        // FIXME
+        sensor->desiredTemperature = atof(value);
+        sensor->desiredTemperatureTxStamp = 0;
 
-    } else if (!strcmp(subtopic, "locate_sensor")) {
-        sensor->locate = true;
+    } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
+        sensor->locate = 1;
     }
+
+    // FIXME: mqtt setup
 }
+
+
+void publish_double(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, double d) {
+    char topic[256];
+    char strvalue[256];
+
+    if (d == (int) d) {
+        sprintf(strvalue, "%i", d);
+    } else {
+        sprintf(strvalue, "%f", d);
+    }
+    sprintf(topic, "/radiator/%i/%s", sensorid, subtopic);
+    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+}
+
+
+// void publishRXStamp(struct mosquitto *mosq, uint32_t sensorid) {
+//     char topic[256];
+//     char strvalue[256];
+
+//     sprintf(strvalue, "%i", time(NULL));
+//     sprintf(topic, "/radiator/%i/last_rx_stamp", sensorid);
+//     mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+// }
 
 
 struct mosquitto *mosquitto_init() {
@@ -123,6 +156,15 @@ int main(int argc, char *argv[]) {
     while(1) {
         // check for energenie messages
         energenie_loop(mosq, 10);
+
+
+        publishLocate(mosq, sensorid, 0);
+        publishDouble(mosq, sensorid, temp);
+        publishRXStamp(mosq, sensorid);
+        publishDouble(mosq, sensorid, voltage);
+        publishRXStamp(mosq, sensorid);
+
+        // FIXME: MQTT setup
 
         // check for mosquitto messages
         mosquitto_loop(mosq, 10, 1);

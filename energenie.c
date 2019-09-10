@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <mosquitto.h>
 #include "energenie.h"
 #include "radio.h"
 #include "hw.h"
@@ -175,55 +174,16 @@ void txIdentify(uint32_t sensorid) {
 }
 
 
-double decodeTemperature(uint8_t *buf, int buflen) {
+double decodeDouble(uint8_t *buf, int buflen) {
     double numvalue;
     if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
-        return -1;
+        return 0;
     }
     return numvalue;
 }
 
 
-double decodeVoltage(uint8_t *buf, int buflen) {
-    double numvalue;
-    if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
-        return -1;
-    }
-    return numvalue;
-}
-
-
-void publishTemperature(struct mosquitto *mosq, uint32_t sensorid, double d) {
-    char topic[256];
-    char strvalue[256];
-
-    sprintf(strvalue, "%f", d);
-    sprintf(topic, "/radiator/%i/temperature", sensorid);
-    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
-}
-
-
-void publishLocate(struct mosquitto *mosq, uint32_t sensorid, int i) {
-    char topic[256];
-    char strvalue[256];
-
-    sprintf(strvalue, "%i", i);
-    sprintf(topic, "/radiator/%i/locate", sensorid);
-    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
-}
-
-
-void publishRXStamp(struct mosquitto *mosq, uint32_t sensorid) {
-    char topic[256];
-    char strvalue[256];
-
-    sprintf(strvalue, "%i", time(NULL));
-    sprintf(topic, "/radiator/%i/last_rx_stamp", sensorid);
-    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
-}
-
-
-void energenie_loop(struct mosquitto *mosq, int timeout) {
+struct RadiatorSensor *energenie_loop(int timeout) {
     uint8_t rxbuf[256];
     int pktlen, i;
     char topic[256];
@@ -233,7 +193,7 @@ void energenie_loop(struct mosquitto *mosq, int timeout) {
     // wait for data
     if (!(readReg(0x28) & 0x04)) {
         usleep(timeout * 1000);
-        return 0;
+        return NULL;
     }
 
     // extract packet data
@@ -246,19 +206,19 @@ void energenie_loop(struct mosquitto *mosq, int timeout) {
     // check manufid/prodid
     if (pktlen < 2) {
         clearFIFO();
-        return 0;
+        return NULL;
     }
     uint8_t manufid = rxbuf[0];
     uint8_t prodid = rxbuf[1];
     if ((manufid != MANUFID_ENERGENIE) || (prodid != PRODID_ETRV)) {
         clearFIFO();
-        return 0;
+        return NULL;
     }
 
     // decrypt the packet data
     if (pktlen < 4) {
         clearFIFO();
-        return 0;
+        return NULL;
     }
     uint16_t ran;
     uint16_t pip = (rxbuf[2] << 8) | rxbuf[3];
@@ -270,41 +230,37 @@ void energenie_loop(struct mosquitto *mosq, int timeout) {
     // check the CRC (final two bytes contains crc value, so should compute to 0 if correct)
     if (crc(rxbuf+4, pktlen-4)) {
         clearFIFO();
-        return 0;
+        return NULL;
     }
 
     // find the sensor
     if (pktlen < 7) {
         clearFIFO();
-        return 0;
+        return NULL;
     }
     uint32_t sensorid = (rxbuf[4] << 16) | (rxbuf[5] << 8) | rxbuf[6];
 
     // ok, find the sensor
-    struct RadiatorSensor *sensor = findSensor(sensorid);
+    struct RadiatorSensor *sensor = find_sensor(sensorid);
     if (!sensor) {
         fprintf(stderr, "Saw unknown sensorid %i\n", sensorid);
         clearFIFO();
-        return 0;
+        return NULL;
     }
 
     // decode the message
     if (pktlen < 8) {
         clearFIFO();
-        return 0;
+        return NULL;
     }
     uint8_t paramid = rxbuf[7];
     switch(paramid) {
     case OT_TEMP_REPORT:
-        double temp = decodeTemperature(rxbuf+8, pktlen-8-3);
-        publishDouble(mosq, sensorid, temp);
-        publishRXStamp(mosq, sensorid);
+        sensor->temperature = decodeDouble(rxbuf+8, pktlen-8-3);
         break;
 
     case OT_VOLTAGE:
-        double voltage = decodeVoltage(rxbuf+8, pktlen-8-3);
-        publishDouble(mosq, sensorid, voltage);
-        publishRXStamp(mosq, sensorid);
+        sensor->voltage = decodeDouble(rxbuf+8, pktlen-8-3);
         break;
 
     default:
@@ -315,28 +271,30 @@ void energenie_loop(struct mosquitto *mosq, int timeout) {
     // send locate message if we've been asked to
     if (sensor->locate) {
         txIdentify(sensorid);
-        publishLocate(mosq, sensorid, 0);
-        sensor->locate = false;
+        sensor->locate = 0;
     }
 
     // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
     // otherwise be sleeeeeeping!
-    if ((time(NULL) - sensor->temperatureTxStamp) > DESIREDTEMP_SECS) {
+    if ((time(NULL) - sensor->desiredTemperatureTxStamp) > DESIREDTEMP_SECS) {
         txDesiredTemperature(sensor->sensorid, sensor->desiredTemperature);
-        sensor->temperatureTxStamp = time(NULL);
+        sensor->desiredTemperatureTxStamp = time(NULL);
+
     } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
         txRequestVoltage(sensor->sensorid);
         sensor->voltageRxStamp = time(NULL);
     }
 
+    // cleanup and return sensor
+    sensor->lastRxStamp = time(NULL);
     clearFIFO();
+    return sensor;
 }
 
 
-struct RadiatorSensor *findSensor(uint32_t sensorid) {
+struct RadiatorSensor *find_sensor(uint32_t sensorid) {
+    // try and find sensor in list
     struct RadiatorSensor *cur = sensors_root;
-
-    // try and fina sensor in list
     while(cur) {
         if (cur->sensorid == sensorid) {
             return cur;
@@ -350,7 +308,7 @@ struct RadiatorSensor *findSensor(uint32_t sensorid) {
     }
 
     // setup the initial structure
-    cur = memset(cur, 0, sizeof(struct RadiatorSensor));
+    memset(cur, 0, sizeof(struct RadiatorSensor));
     cur->sensorid = sensorid;
     cur->next = sensors_root;
     sensors_root = cur;

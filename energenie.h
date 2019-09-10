@@ -7,13 +7,18 @@
 struct RadiatorSensor {
     uint32_t sensorid;
 
+    double temperature;
+
     double desiredTemperature;
-    time_t temperatureTxStamp;
+    time_t desiredTemperatureTxStamp;
 
     double voltage;
     time_t voltageRxStamp;
 
-    bool locate;
+    time_t lastRxStamp;
+
+    uint8_t locate:1;
+    uint8_t mqtt_setup:1;
 
     struct RadiatorSensor *next;
 };
@@ -115,7 +120,7 @@ void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature);
 void txIdentify(uint32_t sensorid);
 double rxTemperature(uint8_t *buf, int buflen);
 double rxVoltage(uint8_t *buf, int buflen);
-void energenie_loop();
-struct RadiatorSensor *findSensor(uint32_t sensorid);
+struct RadiatorSensor *energenie_loop(int timeout);
+struct RadiatorSensor *find_sensor(uint32_t sensorid);
 
 #endif
