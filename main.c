@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         // check for energenie messages
-        energenie_loop(mosq);
+        energenie_loop(mosq, 10);
 
         // check for mosquitto messages
         mosquitto_loop(mosq, 10, 1);

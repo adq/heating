@@ -223,7 +223,7 @@ void publishRXStamp(struct mosquitto *mosq, uint32_t sensorid) {
 }
 
 
-void energenie_loop(struct mosquitto *mosq) {
+void energenie_loop(struct mosquitto *mosq, int timeout) {
     uint8_t rxbuf[256];
     int pktlen, i;
     char topic[256];
@@ -232,8 +232,8 @@ void energenie_loop(struct mosquitto *mosq) {
 
     // wait for data
     if (!(readReg(0x28) & 0x04)) {
-        usleep(10000);
-        return;
+        usleep(timeout * 1000);
+        return 0;
     }
 
     // extract packet data
@@ -246,19 +246,19 @@ void energenie_loop(struct mosquitto *mosq) {
     // check manufid/prodid
     if (pktlen < 2) {
         clearFIFO();
-        return;
+        return 0;
     }
     uint8_t manufid = rxbuf[0];
     uint8_t prodid = rxbuf[1];
     if ((manufid != MANUFID_ENERGENIE) || (prodid != PRODID_ETRV)) {
         clearFIFO();
-        return;
+        return 0;
     }
 
     // decrypt the packet data
     if (pktlen < 4) {
         clearFIFO();
-        return;
+        return 0;
     }
     uint16_t ran;
     uint16_t pip = (rxbuf[2] << 8) | rxbuf[3];
@@ -270,13 +270,13 @@ void energenie_loop(struct mosquitto *mosq) {
     // check the CRC (final two bytes contains crc value, so should compute to 0 if correct)
     if (crc(rxbuf+4, pktlen-4)) {
         clearFIFO();
-        return;
+        return 0;
     }
 
     // find the sensor
     if (pktlen < 7) {
         clearFIFO();
-        return;
+        return 0;
     }
     uint32_t sensorid = (rxbuf[4] << 16) | (rxbuf[5] << 8) | rxbuf[6];
 
@@ -285,13 +285,13 @@ void energenie_loop(struct mosquitto *mosq) {
     if (!sensor) {
         fprintf(stderr, "Saw unknown sensorid %i\n", sensorid);
         clearFIFO();
-        return;
+        return 0;
     }
 
     // decode the message
     if (pktlen < 8) {
         clearFIFO();
-        return;
+        return 0;
     }
     uint8_t paramid = rxbuf[7];
     switch(paramid) {
@@ -322,9 +322,11 @@ void energenie_loop(struct mosquitto *mosq) {
     // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
     // otherwise be sleeeeeeping!
     if ((time(NULL) - sensor->temperatureTxStamp) > DESIREDTEMP_SECS) {
-        txDesiredTemperature(sensor);
+        txDesiredTemperature(sensor->sensorid, sensor->desiredTemperature);
+        sensor->temperatureTxStamp = time(NULL);
     } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
-        txRequestVoltage(sensor);
+        txRequestVoltage(sensor->sensorid);
+        sensor->voltageRxStamp = time(NULL);
     }
 
     clearFIFO();
