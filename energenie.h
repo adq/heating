@@ -5,18 +5,18 @@
 #include <time.h>
 
 struct RadiatorSensor {
-    char *name;
     uint32_t sensorid;
 
     double desiredTemperature;
-    double temperature;
-    time_t temperatureRxStamp;
     time_t temperatureTxStamp;
 
     double voltage;
     time_t voltageRxStamp;
-};
 
+    bool locate;
+
+    struct RadiatorSensor *next;
+};
 
 #define VT_STRING 0
 #define VT_NUMBER 1
@@ -110,10 +110,12 @@ uint8_t cryptbyte(uint16_t *ran, uint8_t dat);
 int16_t crc(uint8_t const mes[], unsigned char siz);
 int decodeValue(uint8_t** buf, int buflen, double *outNumber);
 void tx(uint8_t *msg, uint8_t msglen);
-void txRequestVoltage(struct RadiatorSensor *sensor);
-void txDesiredTemperature(struct RadiatorSensor *sensor);
+void txRequestVoltage(uint32_t sensorid);
+void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature);
 void txIdentify(uint32_t sensorid);
-void rxTemperature(struct RadiatorSensor *sensor, uint8_t *buf, int buflen);
-void rxVoltage(struct RadiatorSensor *sensor, uint8_t *buf, int buflen);
+double rxTemperature(uint8_t *buf, int buflen);
+double rxVoltage(uint8_t *buf, int buflen);
+void energenie_loop();
+struct RadiatorSensor *findSensor(uint32_t sensorid);
 
 #endif

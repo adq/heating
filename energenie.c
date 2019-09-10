@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <mosquitto.h>
 #include "energenie.h"
 #include "radio.h"
 #include "hw.h"
 
+
+struct RadiatorSensor *sensors_root = NULL;
 
 void seedcrypt(uint16_t *ran, uint8_t pid, uint16_t pip) {
     *ran = (((uint16_t) pid) << 8) ^ pip;
@@ -137,10 +140,10 @@ void tx(uint8_t *msg, uint8_t msglen) {
 }
 
 
-void txRequestVoltage(struct RadiatorSensor *sensor) {
-    uint8_t txbuf[] = {sensor->sensorid >> 16,
-                       sensor->sensorid >> 8,
-                       sensor->sensorid,
+void txRequestVoltage(uint32_t sensorid) {
+    uint8_t txbuf[] = {sensorid >> 16,
+                       sensorid >> 8,
+                       sensorid,
                        OT_REQUEST_VOLTAGE,
                        0
                       };
@@ -148,17 +151,16 @@ void txRequestVoltage(struct RadiatorSensor *sensor) {
 }
 
 
-void txDesiredTemperature(struct RadiatorSensor *sensor) {
-    uint8_t txbuf[] = {sensor->sensorid >> 16,
-                       sensor->sensorid >> 8,
-                       sensor->sensorid,
+void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature) {
+    uint8_t txbuf[] = {sensorid >> 16,
+                       sensorid >> 8,
+                       sensorid,
                        OT_TEMP_SET,
                        0x92,
-                       sensor->desiredTemperature,
+                       desiredTemperature,
                        0
                       };
     tx(txbuf, sizeof(txbuf));
-    sensor->temperatureTxStamp = time(NULL);
 }
 
 
@@ -173,27 +175,184 @@ void txIdentify(uint32_t sensorid) {
 }
 
 
-void rxTemperature(struct RadiatorSensor *sensor, uint8_t *buf, int buflen) {
+double decodeTemperature(uint8_t *buf, int buflen) {
     double numvalue;
     if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
-        return;
+        return -1;
     }
-
-    printf("SENSOR %s(%i) temp %g\n", sensor->name, sensor->sensorid, numvalue);
-
-    sensor->temperatureRxStamp = time(NULL);
-    sensor->temperature = numvalue;
+    return numvalue;
 }
 
 
-void rxVoltage(struct RadiatorSensor *sensor, uint8_t *buf, int buflen) {
+double decodeVoltage(uint8_t *buf, int buflen) {
     double numvalue;
     if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
+        return -1;
+    }
+    return numvalue;
+}
+
+
+void publishTemperature(struct mosquitto *mosq, uint32_t sensorid, double d) {
+    char topic[256];
+    char strvalue[256];
+
+    sprintf(strvalue, "%f", d);
+    sprintf(topic, "/radiator/%i/temperature", sensorid);
+    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+}
+
+
+void publishLocate(struct mosquitto *mosq, uint32_t sensorid, int i) {
+    char topic[256];
+    char strvalue[256];
+
+    sprintf(strvalue, "%i", i);
+    sprintf(topic, "/radiator/%i/locate", sensorid);
+    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+}
+
+
+void publishRXStamp(struct mosquitto *mosq, uint32_t sensorid) {
+    char topic[256];
+    char strvalue[256];
+
+    sprintf(strvalue, "%i", time(NULL));
+    sprintf(topic, "/radiator/%i/last_rx_stamp", sensorid);
+    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+}
+
+
+void energenie_loop(struct mosquitto *mosq) {
+    uint8_t rxbuf[256];
+    int pktlen, i;
+    char topic[256];
+    char strvalue[256];
+    double numvalue;
+
+    // wait for data
+    if (!(readReg(0x28) & 0x04)) {
+        usleep(10000);
         return;
     }
 
-    printf("SENSOR %s(%i) voltage %g\n", sensor->name, sensor->sensorid, numvalue);
+    // extract packet data
+    pktlen = readReg(0x00);
+    assert(pktlen < sizeof(rxbuf));
+    for(i=0; i < pktlen; i++) {
+        rxbuf[i] = readReg(0x00);
+    }
 
-    sensor->voltageRxStamp = time(NULL);
-    sensor->voltage = numvalue;
+    // check manufid/prodid
+    if (pktlen < 2) {
+        clearFIFO();
+        return;
+    }
+    uint8_t manufid = rxbuf[0];
+    uint8_t prodid = rxbuf[1];
+    if ((manufid != MANUFID_ENERGENIE) || (prodid != PRODID_ETRV)) {
+        clearFIFO();
+        return;
+    }
+
+    // decrypt the packet data
+    if (pktlen < 4) {
+        clearFIFO();
+        return;
+    }
+    uint16_t ran;
+    uint16_t pip = (rxbuf[2] << 8) | rxbuf[3];
+    seedcrypt(&ran, PID_ENERGENIE, pip);
+    for(i=4; i < pktlen; i++) {
+        rxbuf[i] = cryptbyte(&ran, rxbuf[i]);
+    }
+
+    // check the CRC (final two bytes contains crc value, so should compute to 0 if correct)
+    if (crc(rxbuf+4, pktlen-4)) {
+        clearFIFO();
+        return;
+    }
+
+    // find the sensor
+    if (pktlen < 7) {
+        clearFIFO();
+        return;
+    }
+    uint32_t sensorid = (rxbuf[4] << 16) | (rxbuf[5] << 8) | rxbuf[6];
+
+    // ok, find the sensor
+    struct RadiatorSensor *sensor = findSensor(sensorid);
+    if (!sensor) {
+        fprintf(stderr, "Saw unknown sensorid %i\n", sensorid);
+        clearFIFO();
+        return;
+    }
+
+    // decode the message
+    if (pktlen < 8) {
+        clearFIFO();
+        return;
+    }
+    uint8_t paramid = rxbuf[7];
+    switch(paramid) {
+    case OT_TEMP_REPORT:
+        double temp = decodeTemperature(rxbuf+8, pktlen-8-3);
+        publishDouble(mosq, sensorid, temp);
+        publishRXStamp(mosq, sensorid);
+        break;
+
+    case OT_VOLTAGE:
+        double voltage = decodeVoltage(rxbuf+8, pktlen-8-3);
+        publishDouble(mosq, sensorid, voltage);
+        publishRXStamp(mosq, sensorid);
+        break;
+
+    default:
+        fprintf(stderr -1, "Unknown message paramid %02x from sensorid %i\n", paramid, sensorid);
+        break;
+    }
+
+    // send locate message if we've been asked to
+    if (sensor->locate) {
+        txIdentify(sensorid);
+        publishLocate(mosq, sensorid, 0);
+        sensor->locate = false;
+    }
+
+    // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
+    // otherwise be sleeeeeeping!
+    if ((time(NULL) - sensor->temperatureTxStamp) > DESIREDTEMP_SECS) {
+        txDesiredTemperature(sensor);
+    } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
+        txRequestVoltage(sensor);
+    }
+
+    clearFIFO();
+}
+
+
+struct RadiatorSensor *findSensor(uint32_t sensorid) {
+    struct RadiatorSensor *cur = sensors_root;
+
+    // try and fina sensor in list
+    while(cur) {
+        if (cur->sensorid == sensorid) {
+            return cur;
+        }
+        cur = cur->next;
+    }
+
+    // ok, try and allocate space for a new one
+    if (NULL == (cur = malloc(sizeof(struct RadiatorSensor)))) {
+        return NULL;
+    }
+
+    // setup the initial structure
+    cur = memset(cur, 0, sizeof(struct RadiatorSensor));
+    cur->sensorid = sensorid;
+    cur->next = sensors_root;
+    sensors_root = cur;
+
+    // return the newly created sensor record
+    return cur;
 }
