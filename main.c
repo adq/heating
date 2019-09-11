@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <bcm2835.h>
 #include <mosquitto.h>
+#include <string.h>
+#include <regex.h>
 #include "energenie.h"
 #include "hw.h"
 #include "radio.h"

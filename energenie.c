@@ -198,7 +198,9 @@ struct RadiatorSensor *energenie_loop(int timeout) {
 
     // extract packet data
     pktlen = readReg(0x00);
-    assert(pktlen < sizeof(rxbuf));
+    if (pktlen >= sizeof(rxbuf)) {
+        return NULL;
+    }
     for(i=0; i < pktlen; i++) {
         rxbuf[i] = readReg(0x00);
     }
