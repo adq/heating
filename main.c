@@ -177,8 +177,8 @@ int main(int argc, char *argv[]) {
         heating_mosquitto_publish_int(mosq, sensor->sensorid, "last_rx_stamp", sensor->lastRxStamp);
 
         if (!sensor->mqtt_setup) {
-            heating_mosquitto_subscribe(mosq, sensor->sensorid, 'locate');
-            heating_mosquitto_subscribe(mosq, sensor->sensorid, 'desired_temperature');
+            heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate");
+            heating_mosquitto_subscribe(mosq, sensor->sensorid, "desired_temperature");
             sensor->mqtt_setup = 1;
         }
     }
