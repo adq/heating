@@ -157,9 +157,9 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         // check for energenie messages
-        energenie_loop(mosq, 10);
+        energenie_loop(10);
 
-
+/*
         publishLocate(mosq, sensorid, 0);
         publishDouble(mosq, sensorid, temp);
         publishRXStamp(mosq, sensorid);
@@ -167,6 +167,7 @@ int main(int argc, char *argv[]) {
         publishRXStamp(mosq, sensorid);
 
         // FIXME: MQTT setup
+*/
 
         // check for mosquitto messages
         mosquitto_loop(mosq, 10, 1);
