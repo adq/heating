@@ -97,7 +97,7 @@ void heating_mosquitto_subscribe(struct mosquitto *mosq, uint32_t sensorid, char
     char topic[256];
 
     sprintf(topic, "/radiator/%i/%s", sensorid, subtopic);
-    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+    mosquitto_subscribe(mosq, NULL, topic, 0);
 }
 
 
