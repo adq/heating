@@ -315,6 +315,7 @@ struct RadiatorSensor *find_sensor(uint32_t sensorid) {
     struct RadiatorSensor *cur = sensors_root;
     while(cur) {
         if (cur->sensorid == sensorid) {
+            pthread_mutex_unlock(&sensors_root_mutex);
             return cur;
         }
         cur = cur->next;
