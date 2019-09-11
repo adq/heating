@@ -68,20 +68,25 @@ void heating_mosquitto_message_radiator(const struct mosquitto_message * msg) {
         sensor->desiredTemperature = atof(value);
         sensor->desiredTemperatureTxStamp = 0;
 
-        printf("a1\n");
-
     } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
         sensor->locate = 1;
-        printf("a2\n");
     }
 }
 
 
 void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
+    char value[256];
+
+    memset(value, 0, sizeof(value));
+    strncpy(value, msg->payload, MIN(msg->payloadlen, sizeof(value) - 1));
+
+    fprintf(stderr, "mqtt: %s %s\n", msg->topic, value);
+
     if (!strcmp(msg->topic, "/boiler/sync")) {
-        // FIXME
+        boiler_sync = atoi(value);
+
     } else if (!strcmp(msg->topic, "/boiler/state")) {
-        // FIXME
+        boiler_state = atoi(value);
     }
 }
 
@@ -186,7 +191,7 @@ int main(int argc, char *argv[]) {
 
     // main loop
     while(1) {
-        // do energenie stuff
+        // energenie stuff
         struct RadiatorSensor *sensor = energenie_loop();
         if (NULL != sensor) {
             heating_mosquitto_publish_int(mosq, sensor->sensorid, "locate_sensor", 0);
@@ -201,7 +206,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // FIXME: do boiler related stuff
+        // FIXME: do salus boiler related stuff
     }
 
     shutdownHardware();
