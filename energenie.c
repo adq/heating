@@ -186,7 +186,7 @@ double decodeDouble(uint8_t *buf, int buflen) {
 }
 
 
-struct RadiatorSensor *energenie_loop(int timeout) {
+struct RadiatorSensor *energenie_loop() {
     uint8_t rxbuf[256];
     int pktlen, i;
     char topic[256];
@@ -195,7 +195,7 @@ struct RadiatorSensor *energenie_loop(int timeout) {
 
     // wait for data
     if (!(readReg(0x28) & 0x04)) {
-        usleep(timeout * 1000);
+        usleep(10000);
         return NULL;
     }
 

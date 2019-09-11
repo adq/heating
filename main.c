@@ -31,7 +31,7 @@ char *get_regex_match_string(char *source, regmatch_t* match, char *buf) {
 }
 
 
-void mosq_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message * msg) {
+void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message * msg) {
     int err;
     regmatch_t matches[3];
     char subtopic[256];
@@ -73,7 +73,7 @@ void mosq_message_callback(struct mosquitto *mosq, void *obj, const struct mosqu
 }
 
 
-void publish_double(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, double d) {
+void heating_mosquitto_publish_double(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, double d) {
     char topic[256];
     char strvalue[256];
 
@@ -82,6 +82,14 @@ void publish_double(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, d
     } else {
         sprintf(strvalue, "%f", d);
     }
+    sprintf(topic, "/radiator/%i/%s", sensorid, subtopic);
+    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
+}
+
+
+void heating_mosquitto_subscribe(struct mosquitto *mosq, uint32_t sensorid, char *subtopic) {
+    char topic[256];
+
     sprintf(topic, "/radiator/%i/%s", sensorid, subtopic);
     mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
 }
@@ -100,7 +108,7 @@ struct mosquitto *mosquitto_init(char *mosq_host, int mosq_port) {
         // FIXME: error handling
         return NULL;
     }
-    mosquitto_message_callback_set(mosq, &mosq_message_callback);
+    mosquitto_message_callback_set(mosq, &heating_mosquitto_message_callback);
 
     if (err = mosquitto_connect_async(mosq, mosq_host, mosq_port, 30)) {
         // FIXME: error handling
@@ -114,7 +122,6 @@ int main(int argc, char *argv[]) {
     int opt;
     int err;
     struct mosquitto *mosq;
-    char topic[256];
 
     // parse args
     while ((opt = getopt(argc, argv, "i:")) != -1) {
@@ -153,23 +160,19 @@ int main(int argc, char *argv[]) {
     // deal with energenie messages
     while(1) {
         // check for energenie messages
-        struct RadiatorSensor *sensor = energenie_loop(100);
+        struct RadiatorSensor *sensor = energenie_loop();
         if (NULL == sensor) {
             continue;
         }
 
-        publish_double(mosq, sensor->sensorid, "locate_sensor", 0);
-        publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
-        publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
-        publish_double(mosq, sensor->sensorid, "last_rx_stamp", time(NULL));
+        heating_mosquitto_publish_double(mosq, sensor->sensorid, "locate_sensor", 0);
+        heating_mosquitto_publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
+        heating_mosquitto_publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
+        heating_mosquitto_publish_double(mosq, sensor->sensorid, "last_rx_stamp", sensor->lastRxStamp);
 
         if (!sensor->mqtt_setup) {
-            sprintf(topic, "/radiator/%i/locate", sensor->sensorid);
-            mosquitto_subscribe(mosq, NULL, topic, 0);
-
-            sprintf(topic, "/radiator/%i/desired_temperature", sensor->sensorid);
-            mosquitto_subscribe(mosq, NULL, topic, 0);
-
+            heating_mosquitto_subscribe(mosq, sensor->sensorid, 'locate');
+            heating_mosquitto_subscribe(mosq, sensor->sensorid, 'desired_temperature');
             sensor->mqtt_setup = 1;
         }
     }
