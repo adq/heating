@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <getopt.h>
-#include <assert.h>
 #include <bcm2835.h>
 #include <mosquitto.h>
 #include <string.h>
@@ -106,18 +104,18 @@ struct mosquitto *mosquitto_init(char *mosq_host, int mosq_port) {
     struct mosquitto *mosq;
 
     if (err = mosquitto_lib_init()) {
-        // FIXME: error handling
+        fprintf(stderr, "Faied to initialise mosquitto library\n");
         return NULL;
     }
 
     if (NULL == (mosq = mosquitto_new("heating", false, NULL))) {
-        // FIXME: error handling
+        fprintf(stderr, "Faied to create mosquitto instance\n");
         return NULL;
     }
     mosquitto_message_callback_set(mosq, &heating_mosquitto_message_callback);
 
     if (err = mosquitto_connect_async(mosq, mosq_host, mosq_port, 30)) {
-        // FIXME: error handling
+        fprintf(stderr, "Faied to connect to mosquitto broker\n");
         return NULL;
     }
     return mosq;
@@ -128,39 +126,34 @@ int main(int argc, char *argv[]) {
     int opt;
     int err;
     struct mosquitto *mosq;
+    char *mosquitto_broker;
 
-    // parse args
-    while ((opt = getopt(argc, argv, "i:")) != -1) {
-        switch (opt) {
-        case 'i':
-            // identifySensorId = atoi(optarg);
-            // fprintf(stderr, "Waiting for sensor %i to appear...\n", identifySensorId);
-            break;
-
-        default:
-            fprintf(stderr, "Usage: %s [-i sensorid to identify]\n", argv[0]);
-            exit(EXIT_FAILURE);
-        }
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <mosquitto broker>\n", argv[0]);
+        exit(EXIT_FAILURE);
     }
+    mosquitto_broker = argv[1];
 
     if (initHardware()) {
-        fprintf(stderr, "Cannot initialize BCM2835\n.");
+        fprintf(stderr, "Cannot initialize BCM2835.\n");
         exit(EXIT_FAILURE);
     }
 
-    if (!(mosq = mosquitto_init("beyond", 1883))) {
-        fprintf(stderr, "Cannot initialize mosquitto\n.");
+    if (!(mosq = mosquitto_init(mosquitto_broker, 1883))) {
+        fprintf(stderr, "Cannot initialize mosquitto.\n");
         exit(EXIT_FAILURE);
     }
 
     // compile topic regex
     if (err = regcomp(&topic_regex, "/radiator/([0-9]+)/([a-z]+)", REG_EXTENDED)) {
-        // FIXME: error handling
+        fprintf(stderr, "Cannot setup regex.\n");
+        exit(EXIT_FAILURE);
     }
 
     // start the mosquitto thread
     if (err = mosquitto_loop_start(mosq)) {
-        // FIXME: error handling
+        fprintf(stderr, "Cannot start mosquitto thread.\n");
+        exit(EXIT_FAILURE);
     }
 
     // deal with energenie messages
