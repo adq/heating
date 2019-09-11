@@ -58,7 +58,7 @@ void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const
 
     // extract the value
     memset(value, 0, sizeof(value));
-    strncpy(msg->payload, value, MIN(msg->payloadlen, sizeof(value) - 1));
+    strncpy(value, msg->payload, MIN(msg->payloadlen, sizeof(value) - 1));
 
     fprintf(stderr, "mqtt: %s %s\n", msg->topic, value);
 
