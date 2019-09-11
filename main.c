@@ -171,13 +171,13 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        heating_mosquitto_publish_double(mosq, sensor->sensorid, "locate_sensor", 0);
+        heating_mosquitto_publish_int(mosq, sensor->sensorid, "locate_sensor", 0);
         heating_mosquitto_publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
         heating_mosquitto_publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
         heating_mosquitto_publish_int(mosq, sensor->sensorid, "last_rx_stamp", sensor->lastRxStamp);
 
         if (!sensor->mqtt_setup) {
-            heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate");
+            heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate_sensor");
             heating_mosquitto_subscribe(mosq, sensor->sensorid, "desired_temperature");
             sensor->mqtt_setup = 1;
         }
