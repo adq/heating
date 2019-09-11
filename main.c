@@ -146,7 +146,9 @@ int main(int argc, char *argv[]) {
     }
 
     // start the mosquitto thread
-    mosquitto_loop_start(mosq);
+    if (err = mosquitto_loop_start(mosq)) {
+        // FIXME: error handling
+    }
 
     // deal with energenie messages
     while(1) {
@@ -158,8 +160,8 @@ int main(int argc, char *argv[]) {
 
         publish_double(mosq, sensor->sensorid, "locate_sensor", 0);
         publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
+        publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
         publish_double(mosq, sensor->sensorid, "last_rx_stamp", time(NULL));
-        publish_double(mosq, sensor->sensorid, "voltage", sensor->temperature);
 
         if (!sensor->mqtt_setup) {
             sprintf(topic, "/radiator/%i/locate", sensor->sensorid);
@@ -167,6 +169,8 @@ int main(int argc, char *argv[]) {
 
             sprintf(topic, "/radiator/%i/desired_temperature", sensor->sensorid);
             mosquitto_subscribe(mosq, NULL, topic, 0);
+
+            sensor->mqtt_setup = 1;
         }
     }
 
