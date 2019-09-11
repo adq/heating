@@ -29,7 +29,7 @@ char *get_regex_match_string(char *source, regmatch_t* match, char *buf) {
 }
 
 
-void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message * msg) {
+void heating_mosquitto_message_radiator(const struct mosquitto_message * msg) {
     int err;
     regmatch_t matches[3];
     char subtopic[256];
@@ -70,6 +70,24 @@ void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const
     } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
         sensor->locate = 1;
         printf("a2\n");
+    }
+}
+
+
+void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
+    if (!strcmp(msg->topic, "/boiler/sync")) {
+        // FIXME
+    } else if (!strcmp(msg->topic, "/boiler/status")) {
+        // FIXME
+    }
+}
+
+
+void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message * msg) {
+    if (!strncmp(msg->topic, "/radiator/", 10)) {
+        heating_mosquitto_message_radiator(msg);
+    } else if (!strncmp(msg->topic, "/boiler/", 8)) {
+        heating_mosquitto_message_boiler(msg);
     }
 }
 
@@ -159,24 +177,28 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // deal with energenie messages
+    // subscribe to boiler topics
+    mosquitto_subscribe(mosq, NULL, "/boiler/sync", 0);
+    mosquitto_subscribe(mosq, NULL, "/boiler/status", 0);
+
+    // main loop
     while(1) {
-        // check for energenie messages
+        // do energenie stuff
         struct RadiatorSensor *sensor = energenie_loop();
-        if (NULL == sensor) {
-            continue;
+        if (NULL != sensor) {
+            heating_mosquitto_publish_int(mosq, sensor->sensorid, "locate_sensor", 0);
+            heating_mosquitto_publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
+            heating_mosquitto_publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
+            heating_mosquitto_publish_int(mosq, sensor->sensorid, "last_rx_stamp", sensor->lastRxStamp);
+
+            if (!sensor->mqtt_setup) {
+                heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate_sensor");
+                heating_mosquitto_subscribe(mosq, sensor->sensorid, "desired_temperature");
+                sensor->mqtt_setup = 1;
+            }
         }
 
-        heating_mosquitto_publish_int(mosq, sensor->sensorid, "locate_sensor", 0);
-        heating_mosquitto_publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
-        heating_mosquitto_publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
-        heating_mosquitto_publish_int(mosq, sensor->sensorid, "last_rx_stamp", sensor->lastRxStamp);
-
-        if (!sensor->mqtt_setup) {
-            heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate_sensor");
-            heating_mosquitto_subscribe(mosq, sensor->sensorid, "desired_temperature");
-            sensor->mqtt_setup = 1;
-        }
+        // FIXME: do boiler related stuff
     }
 
     shutdownHardware();
