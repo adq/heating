@@ -280,15 +280,13 @@ struct RadiatorSensor *energenie_loop() {
         break;
     }
 
-    // send locate message if we've been asked to
+    // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
+    // otherwise be sleeeeeeping!
     if (sensor->locate) {
         txIdentify(sensorid);
         sensor->locate = 0;
-    }
 
-    // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
-    // otherwise be sleeeeeeping!
-    if ((time(NULL) - sensor->desiredTemperatureTxStamp) > DESIREDTEMP_SECS) {
+    } else if ((time(NULL) - sensor->desiredTemperatureTxStamp) > DESIREDTEMP_SECS) {
         uint8_t desiredTemperature = sensor->desiredTemperature;
         if (0 == desiredTemperature) {
             desiredTemperature = DEFAULT_TEMPERATURE;
