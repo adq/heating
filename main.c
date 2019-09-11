@@ -112,7 +112,7 @@ struct mosquitto *mosquitto_init(char *mosq_host, int mosq_port) {
     }
     mosquitto_message_callback_set(mosq, &mosq_message_callback);
 
-    if (err = mosquitto_connect(mosq, mosq_host, mosq_port, 30)) {
+    if (err = mosquitto_connect_async(mosq, mosq_host, mosq_port, 30)) {
         // FIXME: error handling
         return NULL;
     }
@@ -121,18 +121,16 @@ struct mosquitto *mosquitto_init(char *mosq_host, int mosq_port) {
 
 
 int main(int argc, char *argv[]) {
-    uint32_t identifySensorId = 0;
     int opt;
     int err;
     struct mosquitto *mosq;
-
 
     // parse args
     while ((opt = getopt(argc, argv, "i:")) != -1) {
         switch (opt) {
         case 'i':
-            identifySensorId = atoi(optarg);
-            fprintf(stderr, "Waiting for sensor %i to appear...\n", identifySensorId);
+            // identifySensorId = atoi(optarg);
+            // fprintf(stderr, "Waiting for sensor %i to appear...\n", identifySensorId);
             break;
 
         default:
@@ -151,26 +149,18 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    // compile topic regex
     if (err = regcomp(&topic_regex, "/radiator/([0-9]+)/([a-z]+)", REG_EXTENDED)) {
         // FIXME: error handling
     }
 
+    // start the mosquitto thread
+    mosquitto_loop_start(mosq);
+
+    // deal with energenie messages
     while(1) {
         // check for energenie messages
-        energenie_loop(10);
-
-/*
-        publishLocate(mosq, sensorid, 0);
-        publishDouble(mosq, sensorid, temp);
-        publishRXStamp(mosq, sensorid);
-        publishDouble(mosq, sensorid, voltage);
-        publishRXStamp(mosq, sensorid);
-
-        // FIXME: MQTT setup
-*/
-
-        // check for mosquitto messages
-        mosquitto_loop(mosq, 10, 1);
+        energenie_loop(100);
     }
 
     shutdownHardware();

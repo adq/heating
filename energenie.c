@@ -2,12 +2,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
 #include "energenie.h"
 #include "radio.h"
 #include "hw.h"
 
 
 struct RadiatorSensor *sensors_root = NULL;
+pthread_mutex_t sensors_root_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 void seedcrypt(uint16_t *ran, uint8_t pid, uint16_t pip) {
     *ran = (((uint16_t) pid) << 8) ^ pip;
@@ -295,6 +298,8 @@ struct RadiatorSensor *energenie_loop(int timeout) {
 
 
 struct RadiatorSensor *find_sensor(uint32_t sensorid) {
+    pthread_mutex_lock(&sensors_root_mutex);
+
     // try and find sensor in list
     struct RadiatorSensor *cur = sensors_root;
     while(cur) {
@@ -306,6 +311,7 @@ struct RadiatorSensor *find_sensor(uint32_t sensorid) {
 
     // ok, try and allocate space for a new one
     if (NULL == (cur = malloc(sizeof(struct RadiatorSensor)))) {
+        pthread_mutex_unlock(&sensors_root_mutex);
         return NULL;
     }
 
@@ -316,5 +322,6 @@ struct RadiatorSensor *find_sensor(uint32_t sensorid) {
     sensors_root = cur;
 
     // return the newly created sensor record
+    pthread_mutex_unlock(&sensors_root_mutex);
     return cur;
 }
