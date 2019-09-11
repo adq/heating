@@ -38,8 +38,6 @@ void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const
     char value[256];
     uint16_t sensorid;
 
-    fprintf(stderr, "mqtt: %s (%i)\n", msg->topic, msg->payloadlen);
-
     if (err = regexec(&topic_regex, msg->topic, 3, matches, 0)) {
         fprintf(stderr, "Failed to match topic %s\n", msg->topic);
         return;
@@ -61,6 +59,8 @@ void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const
     // extract the value
     memset(value, 0, sizeof(value));
     strncpy(msg->payload, value, MIN(msg->payloadlen, sizeof(value) - 1));
+
+    fprintf(stderr, "mqtt: %s %s\n", msg->topic, value);
 
     // handle subtopics
     if (!strcmp(subtopic, "desired_temperature")) {
