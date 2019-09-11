@@ -12,6 +12,9 @@
 
 
 regex_t topic_regex;
+uint16_t boiler_sync = 0;
+bool boiler_state = false;
+
 
 char *get_regex_match_string(char *source, regmatch_t* match, char *buf) {
     int len;
@@ -77,7 +80,7 @@ void heating_mosquitto_message_radiator(const struct mosquitto_message * msg) {
 void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
     if (!strcmp(msg->topic, "/boiler/sync")) {
         // FIXME
-    } else if (!strcmp(msg->topic, "/boiler/status")) {
+    } else if (!strcmp(msg->topic, "/boiler/state")) {
         // FIXME
     }
 }
@@ -179,7 +182,7 @@ int main(int argc, char *argv[]) {
 
     // subscribe to boiler topics
     mosquitto_subscribe(mosq, NULL, "/boiler/sync", 0);
-    mosquitto_subscribe(mosq, NULL, "/boiler/status", 0);
+    mosquitto_subscribe(mosq, NULL, "/boiler/state", 0);
 
     // main loop
     while(1) {
