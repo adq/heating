@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
     }
 
     // compile topic regex
-    if (err = regcomp(&topic_regex, "/radiator/([0-9]+)/([a-z]+)", REG_EXTENDED)) {
+    if (err = regcomp(&topic_regex, "/radiator/([0-9]+)/([a-z_]+)", REG_EXTENDED)) {
         fprintf(stderr, "Cannot setup regex.\n");
         exit(EXIT_FAILURE);
     }
