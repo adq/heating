@@ -283,6 +283,7 @@ struct RadiatorSensor *energenie_loop() {
     // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
     // otherwise be sleeeeeeping!
     if (sensor->locate) {
+        printf("TXLOCATE");
         txIdentify(sensorid);
         sensor->locate = 0;
 
@@ -291,10 +292,12 @@ struct RadiatorSensor *energenie_loop() {
         if (0 == desiredTemperature) {
             desiredTemperature = DEFAULT_TEMPERATURE;
         }
+        printf("TXDESIRED");
         txDesiredTemperature(sensor->sensorid, desiredTemperature);
         sensor->desiredTemperatureTxStamp = time(NULL);
 
     } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
+        printf("TXVOLTAGE");
         txRequestVoltage(sensor->sensorid);
         sensor->voltageRxStamp = time(NULL);
     }
