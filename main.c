@@ -97,7 +97,7 @@ void publish_double(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, d
 // }
 
 
-struct mosquitto *mosquitto_init() {
+struct mosquitto *mosquitto_init(char *mosq_host, int mosq_port) {
     int err;
     struct mosquitto *mosq;
 
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if (!(mosq = mosquitto_init())) {
+    if (!(mosq = mosquitto_init("beyond", 1883))) {
         fprintf(stderr, "Cannot initialize mosquitto\n.");
         exit(EXIT_FAILURE);
     }
