@@ -120,7 +120,7 @@ void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature);
 void txIdentify(uint32_t sensorid);
 double rxTemperature(uint8_t *buf, int buflen);
 double rxVoltage(uint8_t *buf, int buflen);
-struct RadiatorSensor *energenie_loop(int timeout);
+struct RadiatorSensor *energenie_loop();
 struct RadiatorSensor *find_sensor(uint32_t sensorid);
 
 #endif
