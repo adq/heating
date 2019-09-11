@@ -39,22 +39,24 @@ int main(int argc, char *argv[]) {
     regmatch_t matches[3];
     char tmp[256];
 
-    if (err = regcomp(&topic_regex, "/radiator/([0-9]+)/([a-z]+)", REG_EXTENDED)) {
-        printf("COMPERRR: %i\n", err);
-        return 0;
-        // FIXME: error handling
-    }
+    printf("%i\n", time(NULL));
 
-    if (err = regexec(&topic_regex, argv[1], 3, matches, 0)) {
-        printf("EXECERRR: %i\n", err);
-        return 0;
-        // FIXME: error handling
-    }
+    // if (err = regcomp(&topic_regex, "/radiator/([0-9]+)/([a-z]+)", REG_EXTENDED)) {
+    //     printf("COMPERRR: %i\n", err);
+    //     return 0;
+    //     // FIXME: error handling
+    // }
 
-    printf("%s\n", getmatch(argv[1], &matches[1], tmp));
-    printf("%s\n", getmatch(argv[1], &matches[2], tmp));
-    printf("%i %i\n", matches[1].rm_so, matches[1].rm_eo);
-    printf("%i %i\n", matches[2].rm_so, matches[2].rm_eo);
+    // if (err = regexec(&topic_regex, argv[1], 3, matches, 0)) {
+    //     printf("EXECERRR: %i\n", err);
+    //     return 0;
+    //     // FIXME: error handling
+    // }
+
+    // printf("%s\n", getmatch(argv[1], &matches[1], tmp));
+    // printf("%s\n", getmatch(argv[1], &matches[2], tmp));
+    // printf("%i %i\n", matches[1].rm_so, matches[1].rm_eo);
+    // printf("%i %i\n", matches[2].rm_so, matches[2].rm_eo);
 
 
 
