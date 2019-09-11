@@ -38,7 +38,7 @@ void mosq_message_callback(struct mosquitto *mosq, void *obj, const struct mosqu
     char value[256];
     uint16_t sensorid;
 
-    fprintf(stderr, "mqtt: %s (%i)\n", msg->topic, msg->payloadlen)
+    fprintf(stderr, "mqtt: %s (%i)\n", msg->topic, msg->payloadlen);
 
     if (err = regexec(&topic_regex, msg->topic, 3, matches, 0)) {
         fprintf(stderr, "Failed to match topic %s\n", msg->topic);
@@ -70,8 +70,6 @@ void mosq_message_callback(struct mosquitto *mosq, void *obj, const struct mosqu
     } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
         sensor->locate = 1;
     }
-
-    // FIXME: mqtt setup
 }
 
 
@@ -158,10 +156,10 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        publish_double(mqtt, sensor->sensorid, "locate_sensor", 0);
-        publish_double(mqtt, sensor->sensorid, "temperature", sensor->temperature);
-        publish_double(mqtt, sensor->sensorid, "last_rx_stamp", time(NULL));
-        publish_double(mqtt, sensor->sensorid, "voltage", sensor->temperature);
+        publish_double(mosq, sensor->sensorid, "locate_sensor", 0);
+        publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
+        publish_double(mosq, sensor->sensorid, "last_rx_stamp", time(NULL));
+        publish_double(mosq, sensor->sensorid, "voltage", sensor->temperature);
 
         if (!sensor->mqtt_setup) {
             sprintf(topic, "/radiator/%i/locate", sensor->sensorid);
