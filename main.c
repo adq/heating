@@ -38,6 +38,8 @@ void mosq_message_callback(struct mosquitto *mosq, void *obj, const struct mosqu
     char value[256];
     uint16_t sensorid;
 
+    fprintf(stderr, "mqtt: %s (%i)\n", msg->topic, msg->payloadlen)
+
     if (err = regexec(&topic_regex, msg->topic, 3, matches, 0)) {
         fprintf(stderr, "Failed to match topic %s\n", msg->topic);
         return;
@@ -87,16 +89,6 @@ void publish_double(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, d
 }
 
 
-// void publishRXStamp(struct mosquitto *mosq, uint32_t sensorid) {
-//     char topic[256];
-//     char strvalue[256];
-
-//     sprintf(strvalue, "%i", time(NULL));
-//     sprintf(topic, "/radiator/%i/last_rx_stamp", sensorid);
-//     mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
-// }
-
-
 struct mosquitto *mosquitto_init(char *mosq_host, int mosq_port) {
     int err;
     struct mosquitto *mosq;
@@ -124,6 +116,7 @@ int main(int argc, char *argv[]) {
     int opt;
     int err;
     struct mosquitto *mosq;
+    char topic[256];
 
     // parse args
     while ((opt = getopt(argc, argv, "i:")) != -1) {
@@ -160,7 +153,23 @@ int main(int argc, char *argv[]) {
     // deal with energenie messages
     while(1) {
         // check for energenie messages
-        energenie_loop(100);
+        struct RadiatorSensor *sensor = energenie_loop(100);
+        if (NULL == sensor) {
+            continue;
+        }
+
+        publish_double(mqtt, sensor->sensorid, "locate_sensor", 0);
+        publish_double(mqtt, sensor->sensorid, "temperature", sensor->temperature);
+        publish_double(mqtt, sensor->sensorid, "last_rx_stamp", time(NULL));
+        publish_double(mqtt, sensor->sensorid, "voltage", sensor->temperature);
+
+        if (!sensor->mqtt_setup) {
+            sprintf(topic, "/radiator/%i/locate", sensor->sensorid);
+            mosquitto_subscribe(mosq, NULL, topic, 0);
+
+            sprintf(topic, "/radiator/%i/desired_temperature", sensor->sensorid);
+            mosquitto_subscribe(mosq, NULL, topic, 0);
+        }
     }
 
     shutdownHardware();

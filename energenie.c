@@ -202,11 +202,14 @@ struct RadiatorSensor *energenie_loop(int timeout) {
     // extract packet data
     pktlen = readReg(0x00);
     if (pktlen >= sizeof(rxbuf)) {
+        clearFIFO();
         return NULL;
     }
     for(i=0; i < pktlen; i++) {
         rxbuf[i] = readReg(0x00);
     }
+
+    fprintf(stderr, "Saw %i packet\n", pktlen);
 
     // check manufid/prodid
     if (pktlen < 2) {
@@ -244,6 +247,8 @@ struct RadiatorSensor *energenie_loop(int timeout) {
         return NULL;
     }
     uint32_t sensorid = (rxbuf[4] << 16) | (rxbuf[5] << 8) | rxbuf[6];
+
+    fprintf(stderr, "Saw sensor %i\n", sensorid);
 
     // ok, find the sensor
     struct RadiatorSensor *sensor = find_sensor(sensorid);
