@@ -65,8 +65,11 @@ void heating_mosquitto_message_callback(struct mosquitto *mosq, void *obj, const
         sensor->desiredTemperature = atof(value);
         sensor->desiredTemperatureTxStamp = 0;
 
+        printf("a1\n");
+
     } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
         sensor->locate = 1;
+        printf("a2\n");
     }
 }
 
