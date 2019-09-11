@@ -8,6 +8,8 @@
 #include "hw.h"
 
 
+#define DEFAULT_TEMPERATURE 17
+
 struct RadiatorSensor *sensors_root = NULL;
 pthread_mutex_t sensors_root_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -287,7 +289,11 @@ struct RadiatorSensor *energenie_loop() {
     // send any transmissions if there are any. We only do this if we've just seen a message 'cos the device will
     // otherwise be sleeeeeeping!
     if ((time(NULL) - sensor->desiredTemperatureTxStamp) > DESIREDTEMP_SECS) {
-        txDesiredTemperature(sensor->sensorid, sensor->desiredTemperature);
+        uint8_t desiredTemperature = sensor->desiredTemperature;
+        if (0 == desiredTemperature) {
+            desiredTemperature = DEFAULT_TEMPERATURE;
+        }
+        txDesiredTemperature(sensor->sensorid, desiredTemperature);
         sensor->desiredTemperatureTxStamp = time(NULL);
 
     } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
