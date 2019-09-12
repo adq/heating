@@ -7,13 +7,18 @@
 #include <string.h>
 #include <regex.h>
 #include "energenie.h"
+#include "salus.h"
 #include "hw.h"
 #include "radio.h"
 
 
 regex_t topic_regex;
-uint16_t boiler_sync = 0;
+uint16_t boiler_pairing_code = 0;
+bool boiler_pair_now = false;
 bool boiler_state = false;
+time_t boiler_tx_stamp = 0;
+
+#define BOILER_TX_SECS (10*60)
 
 
 char *get_regex_match_string(char *source, regmatch_t* match, char *buf) {
@@ -82,11 +87,13 @@ void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
 
     fprintf(stderr, "mqtt: %s %s\n", msg->topic, value);
 
-    if (!strcmp(msg->topic, "/boiler/sync")) {
-        boiler_sync = atoi(value);
+    if (!strcmp(msg->topic, "/boiler/pair")) {
+        boiler_pairing_code = atoi(value);
+        boiler_pair_now = true;
 
     } else if (!strcmp(msg->topic, "/boiler/state")) {
         boiler_state = atoi(value);
+        boiler_tx_stamp = 0;
     }
 }
 
@@ -206,7 +213,21 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        // FIXME: do salus boiler related stuff
+        // salus boiler stuff
+        if (0 != boiler_pairing_code) {
+            if (boiler_pair_now) {
+                txSalusPairing(boiler_pairing_code);
+                boiler_pair_now = false;
+            }
+
+            if ((time(NULL) - boiler_tx_stamp) > BOILER_TX_SECS) {
+                if (boiler_state) {
+                    txSalusBoilerOn(boiler_pairing_code);
+                } else {
+                    txSalusBoilerOff(boiler_pairing_code);
+                }
+            }
+        }
     }
 
     shutdownHardware();
