@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
     }
 
     // subscribe to boiler topics
-    mosquitto_subscribe(mosq, NULL, "/boiler/sync", 0);
+    mosquitto_subscribe(mosq, NULL, "/boiler/pair", 0);
     mosquitto_subscribe(mosq, NULL, "/boiler/state", 0);
 
     // main loop
@@ -216,16 +216,23 @@ int main(int argc, char *argv[]) {
         // salus boiler stuff
         if (0 != boiler_pairing_code) {
             if (boiler_pair_now) {
+                bcm2835_spi_chipSelect(CS_868MHZ);
                 txSalusPairing(boiler_pairing_code);
+                bcm2835_spi_chipSelect(CS_433MHZ);
+
                 boiler_pair_now = false;
             }
 
             if ((time(NULL) - boiler_tx_stamp) > BOILER_TX_SECS) {
+                bcm2835_spi_chipSelect(CS_868MHZ);
                 if (boiler_state) {
                     txSalusBoilerOn(boiler_pairing_code);
                 } else {
                     txSalusBoilerOff(boiler_pairing_code);
                 }
+                bcm2835_spi_chipSelect(CS_433MHZ);
+
+                boiler_tx_stamp = time(NULL);
             }
         }
     }
