@@ -66,8 +66,6 @@ void heating_mosquitto_message_radiator(const struct mosquitto_message * msg) {
     memset(value, 0, sizeof(value));
     strncpy(value, msg->payload, MIN(msg->payloadlen, sizeof(value) - 1));
 
-    fprintf(stderr, "mqtt: %s %s\n", msg->topic, value);
-
     // handle subtopics
     if (!strcmp(subtopic, "desired_temperature")) {
         sensor->desiredTemperature = atof(value);
@@ -84,8 +82,6 @@ void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
 
     memset(value, 0, sizeof(value));
     strncpy(value, msg->payload, MIN(msg->payloadlen, sizeof(value) - 1));
-
-    fprintf(stderr, "mqtt: %s %s\n", msg->topic, value);
 
     if (!strcmp(msg->topic, "/boiler/pair")) {
         boiler_pairing_code = atoi(value);
