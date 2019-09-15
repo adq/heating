@@ -89,7 +89,6 @@ void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
 
     } else if (!strcmp(msg->topic, "/boiler/state")) {
         boiler_state = atoi(value);
-        boiler_tx_stamp = 0;
     }
 }
 
