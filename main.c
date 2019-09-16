@@ -16,6 +16,7 @@ regex_t topic_regex;
 uint16_t boiler_pairing_code = 0;
 bool boiler_pair_now = false;
 bool boiler_state = false;
+bool boiler_desired_state = false;
 time_t boiler_tx_stamp = 0;
 
 #define BOILER_TX_SECS (3*60)
@@ -87,7 +88,7 @@ void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
         boiler_pairing_code = atoi(value);
         boiler_pair_now = true;
 
-    } else if (!strcmp(msg->topic, "/boiler/state")) {
+    } else if (!strcmp(msg->topic, "/boiler/desired_state")) {
         boiler_state = atoi(value);
     }
 }
@@ -127,6 +128,14 @@ void heating_mosquitto_subscribe(struct mosquitto *mosq, uint32_t sensorid, char
 
     sprintf(topic, "/radiator/%i/%s", sensorid, subtopic);
     mosquitto_subscribe(mosq, NULL, topic, 0);
+}
+
+void boiler_mosquitto_publish_int(struct mosquitto *mosq, int i) {
+    char topic[256];
+    char strvalue[256];
+
+    sprintf(strvalue, "%i", i);
+    mosquitto_publish(mosq, NULL, "/boiler/state", strlen(strvalue), strvalue, 0, true);
 }
 
 
@@ -189,7 +198,7 @@ int main(int argc, char *argv[]) {
 
     // subscribe to boiler topics
     mosquitto_subscribe(mosq, NULL, "/boiler/pair", 0);
-    mosquitto_subscribe(mosq, NULL, "/boiler/state", 0);
+    mosquitto_subscribe(mosq, NULL, "/boiler/desired_state", 0);
 
     // main loop
     while(1) {
@@ -222,12 +231,15 @@ int main(int argc, char *argv[]) {
 
             if ((time(NULL) - boiler_tx_stamp) > BOILER_TX_SECS) {
                 bcm2835_spi_chipSelect(CS_868MHZ);
-                if (boiler_state) {
+                if (boiler_desired_state) {
                     txSalusBoilerOn(boiler_pairing_code);
                 } else {
                     txSalusBoilerOff(boiler_pairing_code);
                 }
                 bcm2835_spi_chipSelect(CS_433MHZ);
+
+                boiler_state = boiler_desired_state;
+                boiler_mosquitto_publish_int(mosq, boiler_state);
 
                 boiler_tx_stamp = time(NULL);
             }
