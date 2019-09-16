@@ -18,7 +18,7 @@ bool boiler_pair_now = false;
 bool boiler_state = false;
 time_t boiler_tx_stamp = 0;
 
-#define BOILER_TX_SECS (10*60)
+#define BOILER_TX_SECS (3*60)
 
 
 char *get_regex_match_string(char *source, regmatch_t* match, char *buf) {
