@@ -208,7 +208,7 @@ struct RadiatorSensor *energenie_loop() {
 
     // wait for data
     if (!(readReg(0x28) & 0x04)) {
-        usleep(10000);
+        usleep(50000);
         return NULL;
     }
 
