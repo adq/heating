@@ -17,6 +17,8 @@ struct RadiatorSensor {
 
     time_t lastRxStamp;
 
+    time_t exerciseTxStamp;
+
     uint8_t locate:1;
     uint8_t mqtt_setup:1;
 
@@ -35,6 +37,7 @@ struct RadiatorSensor {
 
 #define ASKVOLTAGE_SECS (60*60)
 #define DESIREDTEMP_SECS (60*60)
+#define EXCERCISE_SECS (12*60*60)
 
 #define OT_JOIN_RESP	0x6A
 #define OT_JOIN_CMD		0xEA
@@ -118,6 +121,7 @@ void tx(uint8_t *msg, uint8_t msglen);
 void txRequestVoltage(uint32_t sensorid);
 void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature);
 void txIdentify(uint32_t sensorid);
+void txExercise(uint32_t sensorid);
 double decodeDouble(uint8_t *buf, int buflen);
 struct RadiatorSensor *energenie_loop();
 struct RadiatorSensor *find_sensor(uint32_t sensorid);

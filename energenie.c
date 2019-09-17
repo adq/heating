@@ -179,6 +179,17 @@ void txIdentify(uint32_t sensorid) {
 }
 
 
+void txExercise(uint32_t sensorid) {
+    uint8_t txbuf[] = {sensorid >> 16,
+                       sensorid >> 8,
+                       sensorid,
+                       OT_EXERCISE_VALVE,
+                       0
+                      };
+    tx(txbuf, sizeof(txbuf));
+}
+
+
 double decodeDouble(uint8_t *buf, int buflen) {
     double numvalue;
     if (decodeValue(&buf, buflen, &numvalue) != VT_NUMBER) {
@@ -293,6 +304,10 @@ struct RadiatorSensor *energenie_loop() {
     } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
         txRequestVoltage(sensor->sensorid);
         sensor->voltageRxStamp = time(NULL);
+
+    } else if ((time(NULL) - sensor->exerciseTxStamp) > EXCERCISE_SECS) {
+        txExercise(sensor->sensorid);
+        sensor->exerciseTxStamp = time(NULL);
     }
 
     // cleanup and return sensor
