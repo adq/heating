@@ -130,12 +130,13 @@ void heating_mosquitto_subscribe(struct mosquitto *mosq, uint32_t sensorid, char
     mosquitto_subscribe(mosq, NULL, topic, 0);
 }
 
-void boiler_mosquitto_publish_int(struct mosquitto *mosq, int i) {
+void boiler_mosquitto_publish_int(struct mosquitto *mosq, char *subtopic, int i) {
     char topic[256];
     char strvalue[256];
 
+    sprintf(topic, "/boiler/%s", subtopic);
     sprintf(strvalue, "%i", i);
-    mosquitto_publish(mosq, NULL, "/boiler/state", strlen(strvalue), strvalue, 0, true);
+    mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
 }
 
 
@@ -239,7 +240,7 @@ int main(int argc, char *argv[]) {
                 bcm2835_spi_chipSelect(CS_433MHZ);
 
                 boiler_state = boiler_desired_state;
-                boiler_mosquitto_publish_int(mosq, boiler_state);
+                boiler_mosquitto_publish_int(mosq, "state", boiler_state);
 
                 boiler_tx_stamp = time(NULL);
             }
