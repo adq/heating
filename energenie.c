@@ -126,17 +126,20 @@ void tx(uint8_t *msg, uint8_t msglen) {
 
     // send it (multiple times)
     for(i=0; i < MESSAGE_RETRIES; i++) {
+        sendPacket(txbuf, 5 + msglen + 3);
+        usleep(30000);
+
+/*
         writeRegMultibyte(0, txbuf, 5 + msglen + 3);
 
         // check FIFO level
         while(readReg(0x28) & 0x20) {
             usleep(1000);
         }
-    }
-
-    // wait for FIFO to empty itself
-    while(readReg(0x28) & 0x40) {
-        usleep(1000);
+        while(readReg(0x28) & 0x40) {
+            usleep(1000);
+        }
+        */
     }
 
     // aaand back to rx mode again
