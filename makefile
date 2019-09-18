@@ -4,7 +4,7 @@ heating:
 salusmon:
 	gcc energenie.c hw.c radio.c salus.c salusmon.c -o salusmon -lbcm2835 -lpthread
 
-salusmon:
+etest:
 	gcc energenie.c hw.c radio.c salus.c etest.c -o etest -lbcm2835 -lpthread
 
 clean:
