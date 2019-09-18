@@ -17,8 +17,6 @@ struct RadiatorSensor {
 
     time_t lastRxStamp;
 
-    time_t exerciseTxStamp;
-
     uint8_t exercise_valve:1;
     uint8_t locate:1;
     uint8_t mqtt_setup:1;
@@ -38,7 +36,6 @@ struct RadiatorSensor {
 
 #define ASKVOLTAGE_SECS (60*60)
 #define DESIREDTEMP_SECS (60*60)
-#define EXCERCISE_SECS (12*60*60)
 
 #define OT_JOIN_RESP	0x6A
 #define OT_JOIN_CMD		0xEA
