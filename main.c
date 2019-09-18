@@ -74,6 +74,9 @@ void heating_mosquitto_message_radiator(const struct mosquitto_message * msg) {
 
     } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
         sensor->locate = 1;
+
+    } else if (!strcmp(subtopic, "exercise_valve") && atoi(value)) {
+        sensor->exercise_valve = 1;
     }
 }
 
@@ -206,7 +209,8 @@ int main(int argc, char *argv[]) {
         // energenie stuff
         struct RadiatorSensor *sensor = energenie_loop();
         if (NULL != sensor) {
-            heating_mosquitto_publish_int(mosq, sensor->sensorid, "locate_sensor", 0);
+            heating_mosquitto_publish_int(mosq, sensor->sensorid, "locate_sensor", sensor->locate);
+            heating_mosquitto_publish_int(mosq, sensor->sensorid, "exercise_valve", sensor->exercise_valve);
             heating_mosquitto_publish_double(mosq, sensor->sensorid, "temperature", sensor->temperature);
             if (sensor->voltage) {
                 heating_mosquitto_publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
@@ -216,6 +220,7 @@ int main(int argc, char *argv[]) {
             if (!sensor->mqtt_setup) {
                 heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate_sensor");
                 heating_mosquitto_subscribe(mosq, sensor->sensorid, "desired_temperature");
+                heating_mosquitto_subscribe(mosq, sensor->sensorid, "exercise_valve");
                 sensor->mqtt_setup = 1;
             }
         }

@@ -19,6 +19,7 @@ struct RadiatorSensor {
 
     time_t exerciseTxStamp;
 
+    uint8_t exercise_valve:1;
     uint8_t locate:1;
     uint8_t mqtt_setup:1;
 

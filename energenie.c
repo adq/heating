@@ -293,6 +293,11 @@ struct RadiatorSensor *energenie_loop() {
         txIdentify(sensorid);
         sensor->locate = 0;
 
+    } else if (sensor->exercise_valve || ((time(NULL) - sensor->exerciseTxStamp) > EXCERCISE_SECS)) {
+        txExercise(sensor->sensorid);
+        sensor->exerciseTxStamp = time(NULL);
+        sensor->exercise_valve = 0;
+
     } else if ((time(NULL) - sensor->desiredTemperatureTxStamp) > DESIREDTEMP_SECS) {
         uint8_t desiredTemperature = sensor->desiredTemperature;
         if (0 == desiredTemperature) {
@@ -304,10 +309,6 @@ struct RadiatorSensor *energenie_loop() {
     } else if ((time(NULL) - sensor->voltageRxStamp) > ASKVOLTAGE_SECS) {
         txRequestVoltage(sensor->sensorid);
         sensor->voltageRxStamp = time(NULL);
-
-    } else if ((time(NULL) - sensor->exerciseTxStamp) > EXCERCISE_SECS) {
-        txExercise(sensor->sensorid);
-        sensor->exerciseTxStamp = time(NULL);
     }
 
     // cleanup and return sensor
