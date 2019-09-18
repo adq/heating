@@ -195,6 +195,7 @@ void txExercise(uint32_t sensorid) {
 void txOOKSwitch(uint32_t address, int socketNum, int onoff) {
     uint8_t txbuf[12];
 
+    // wacky-encode the address
     for (int i = OOK_MSG_ADDRESS_LENGTH - 1; i>=0; --i) {
         uint8_t lownibble = (address & 0x01) ? 0x0E : 0x08;
         uint8_t highnibble = (address & 0x02) ? 0xE0 : 0x80;
@@ -202,6 +203,7 @@ void txOOKSwitch(uint32_t address, int socketNum, int onoff) {
         address = address >> 2;
     }
 
+    // encode the socket/onoff command
     switch (socketNum) {
     case 0:                     // All Sockets on Address
         if (onoff) {
