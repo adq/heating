@@ -192,6 +192,76 @@ void txExercise(uint32_t sensorid) {
     tx(txbuf, sizeof(txbuf));
 }
 
+void txOOKSwitch(uint32_t address, int socketNum, int onoff) {
+    uint8_t txbuf[12];
+
+    for (int i = OOK_MSG_ADDRESS_LENGTH - 1; i>=0; --i) {
+        uint8_t lownibble = (address & 0x01) ? 0x0E : 0x08;
+        uint8_t highnibble = (address & 0x02) ? 0xE0 : 0x80;
+        txbuf[i] = highnibble | lownibble;
+        address = address >> 2;
+    }
+
+    switch (socketNum) {
+    case 0:                     // All Sockets on Address
+        if (onoff) {
+            txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
+            txbuf[11] = 0x8E;		// D2-l, D3-h
+        } else {
+            txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
+            txbuf[11] = 0x88;		// D2-l, D3-h
+        }
+        break;
+
+    case 1:
+        if (onoff) {
+            txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 on
+            txbuf[11] = 0xEE;		// D2-h, D3-h
+        } else {
+            txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 off
+            txbuf[11] = 0xE8;		// D2-h, D3-l
+        }
+        break;
+
+    case 2:
+        if (onoff) {
+            txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 on
+            txbuf[11] = 0xEE;		// D2-h, D3-h
+        } else {
+            txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 off
+            txbuf[11] = 0xE8;		// D2-h, D3-l
+        }
+        break;
+
+    case 3:
+        if (onoff) {
+            txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 on
+            txbuf[11] = 0xEE;		// D2-h, D3-h
+        } else {
+            txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 off
+            txbuf[11] = 0xE8;		// D2-h, D3-l
+        }
+        break;
+
+    case 4:
+        if (onoff) {
+            txbuf[10] = 0x88;		// D0-l, D1-l           // S4 on
+            txbuf[11] = 0xEE;		// D2-h, D3-h
+        } else {
+            txbuf[10] = 0x88;		// D0-l, D1-l		// S3 off
+            txbuf[11] = 0xE8;		// D2-h, D3-l
+        }
+        break;
+
+    default:
+        return;
+    }
+
+    configEnergenieOOK();
+    tx(txbuf, sizeof(txbuf));
+    configOpenThingsFSK();
+}
+
 
 double decodeDouble(uint8_t *buf, int buflen) {
     double numvalue;

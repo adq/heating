@@ -111,6 +111,8 @@ struct RadiatorSensor {
                                        Unsigned Integer Length 2
                                           */
 
+#define OOK_MSG_ADDRESS_LENGTH 10
+
 void seedcrypt(uint16_t *ran, uint8_t pid, uint16_t pip);
 uint8_t cryptbyte(uint16_t *ran, uint8_t dat);
 int16_t crc(uint8_t const mes[], unsigned char siz);
@@ -120,6 +122,7 @@ void txRequestVoltage(uint32_t sensorid);
 void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature);
 void txIdentify(uint32_t sensorid);
 void txExercise(uint32_t sensorid);
+void txOOKSwitch(uint32_t address, int socketNum, int onoff);
 double decodeDouble(uint8_t *buf, int buflen);
 struct RadiatorSensor *energenie_loop();
 struct RadiatorSensor *find_sensor(uint32_t sensorid);
