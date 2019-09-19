@@ -93,6 +93,31 @@ int decodeValue(uint8_t** buf, int buflen, double *outNumber) {
     return -1;
 }
 
+uint8_t encode_bits(uint32_t data, uint8_t count, uint8_t *buf) {
+    uint8_t shift = count - 2;
+    uint8_t bits;
+
+    for(int i=0; i< count / 2; i++) {
+        switch ((data >> shift) & 0x03) {
+        case 0:
+            bits = 0x88;
+            break;
+        case 1:
+            bits = 0x8E;
+            break;
+        case 2:
+            bits = 0xE8;
+            break;
+        case 3:
+            bits = 0xEE;
+            break;
+        }
+        buf[i] = bits;
+        shift -= 2;
+    }
+
+    return count / 2;
+}
 
 void tx(uint8_t *msg, uint8_t msglen) {
     uint16_t pip = rand();
@@ -128,18 +153,6 @@ void tx(uint8_t *msg, uint8_t msglen) {
     for(i=0; i < MESSAGE_RETRIES; i++) {
         sendPacket(txbuf, 5 + msglen + 3);
         usleep(30000);
-
-/*
-        writeRegMultibyte(0, txbuf, 5 + msglen + 3);
-
-        // check FIFO level
-        while(readReg(0x28) & 0x20) {
-            usleep(1000);
-        }
-        while(readReg(0x28) & 0x40) {
-            usleep(1000);
-        }
-        */
     }
 
     // aaand back to rx mode again
@@ -192,75 +205,109 @@ void txExercise(uint32_t sensorid) {
     tx(txbuf, sizeof(txbuf));
 }
 
-void txOOKSwitch(uint32_t address, int socketNum, int onoff) {
-    uint8_t txbuf[12];
+void txOOKSwitch(uint32_t address, uint32_t device_address, uint8_t on_off) {
+    uint8_t txbuf[16];
+    uint8_t txpos = 0;
 
-    // wacky-encode the address
-    for (int i = OOK_MSG_ADDRESS_LENGTH - 1; i>=0; --i) {
-        uint8_t lownibble = (address & 0x01) ? 0x0E : 0x08;
-        uint8_t highnibble = (address & 0x02) ? 0xE0 : 0x80;
-        txbuf[i] = highnibble | lownibble;
-        address = address >> 2;
+    txpos += encode_bits(address, 20, txbuf);
+
+
+    // payload += encode_bits((house_address & 0x0F0000) >> 16, 4)
+    // payload += encode_bits((house_address & 0x00FF00) >> 8,  8)
+    // payload += encode_bits((house_address & 0x0000FF),       8)
+
+
+    // // wacky-encode the address
+    // for (int i = OOK_MSG_ADDRESS_LENGTH - 1; i>=0; --i) {
+    //     uint8_t lownibble = (address & 0x01) ? 0x0E : 0x08;
+    //     uint8_t highnibble = (address & 0x02) ? 0xE0 : 0x80;
+    //     txbuf[i] = highnibble | lownibble;
+    //     address = address >> 2;
+    // }
+
+    uint8_t bits = 0;
+    if (!on_off) {
+        bits = 0x00;
+    } else {
+        bits = 0x01;
     }
-
-    // encode the socket/onoff command
-    switch (socketNum) {
-    case 0:                     // All Sockets on Address
-        if (onoff) {
-            txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
-            txbuf[11] = 0x8E;		// D2-l, D3-h
-        } else {
-            txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
-            txbuf[11] = 0x88;		// D2-l, D3-h
-        }
+    switch(device_address) {
+    case 0:
+        bits |= 0x0C;
         break;
-
     case 1:
-        if (onoff) {
-            txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 on
-            txbuf[11] = 0xEE;		// D2-h, D3-h
-        } else {
-            txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 off
-            txbuf[11] = 0xE8;		// D2-h, D3-l
-        }
+        bits |= 0x0E;
         break;
-
     case 2:
-        if (onoff) {
-            txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 on
-            txbuf[11] = 0xEE;		// D2-h, D3-h
-        } else {
-            txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 off
-            txbuf[11] = 0xE8;		// D2-h, D3-l
-        }
+        bits |= 0x06;
         break;
-
     case 3:
-        if (onoff) {
-            txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 on
-            txbuf[11] = 0xEE;		// D2-h, D3-h
-        } else {
-            txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 off
-            txbuf[11] = 0xE8;		// D2-h, D3-l
-        }
+        bits |= 0x0A;
         break;
-
     case 4:
-        if (onoff) {
-            txbuf[10] = 0x88;		// D0-l, D1-l           // S4 on
-            txbuf[11] = 0xEE;		// D2-h, D3-h
-        } else {
-            txbuf[10] = 0x88;		// D0-l, D1-l		// S3 off
-            txbuf[11] = 0xE8;		// D2-h, D3-l
-        }
+        bits |= 0x02;
         break;
-
-    default:
-        return;
     }
+    txpos += encode_bits(address, 8, txbuf + txpos);
+
+    // // encode the socket/onoff command
+    // switch (socketNum) {
+    // case 0:                     // All Sockets on Address
+    //     if (onoff) {
+    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
+    //         txbuf[11] = 0x8E;		// D2-l, D3-h
+    //     } else {
+    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
+    //         txbuf[11] = 0x88;		// D2-l, D3-h
+    //     }
+    //     break;
+
+    // case 1:
+    //     if (onoff) {
+    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 on
+    //         txbuf[11] = 0xEE;		// D2-h, D3-h
+    //     } else {
+    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 off
+    //         txbuf[11] = 0xE8;		// D2-h, D3-l
+    //     }
+    //     break;
+
+    // case 2:
+    //     if (onoff) {
+    //         txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 on
+    //         txbuf[11] = 0xEE;		// D2-h, D3-h
+    //     } else {
+    //         txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 off
+    //         txbuf[11] = 0xE8;		// D2-h, D3-l
+    //     }
+    //     break;
+
+    // case 3:
+    //     if (onoff) {
+    //         txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 on
+    //         txbuf[11] = 0xEE;		// D2-h, D3-h
+    //     } else {
+    //         txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 off
+    //         txbuf[11] = 0xE8;		// D2-h, D3-l
+    //     }
+    //     break;
+
+    // case 4:
+    //     if (onoff) {
+    //         txbuf[10] = 0x88;		// D0-l, D1-l           // S4 on
+    //         txbuf[11] = 0xEE;		// D2-h, D3-h
+    //     } else {
+    //         txbuf[10] = 0x88;		// D0-l, D1-l		// S3 off
+    //         txbuf[11] = 0xE8;		// D2-h, D3-l
+    //     }
+    //     break;
+
+    // default:
+    //     return;
+    // }
 
     configEnergenieOOK();
-    tx(txbuf, sizeof(txbuf));
+    tx(txbuf, txpos);
     configOpenThingsFSK();
 }
 
