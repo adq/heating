@@ -65,7 +65,7 @@ void configOpenThingsFSK() {
     // channel filter bandwidth 0xkHz
     writeReg(0x19, 0x43);
 
-    // preamble LSB 3 bytes
+    // preamble size 3 bytes
     writeReg(0x2c, 0x00);
     writeReg(0x2d, 0x03);
 
@@ -116,7 +116,7 @@ void configEnergenieOOK() {
     // channel filter bandwidth 0xkHz
     writeReg(0x19, 0x41);
 
-    // preamble LSB 3 bytes
+    // preamble size 0 bytes
     writeReg(0x2c, 0);
     writeReg(0x2d, 0);
 
