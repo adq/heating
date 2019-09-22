@@ -122,7 +122,7 @@ void txRequestVoltage(uint32_t sensorid);
 void txDesiredTemperature(uint32_t sensorid, uint8_t desiredTemperature);
 void txIdentify(uint32_t sensorid);
 void txExercise(uint32_t sensorid);
-void txOOKSwitch(uint32_t address, int socketNum, int onoff);
+void txOOKSwitch(uint32_t house_address, uint32_t device_address, uint8_t on_off);
 double decodeDouble(uint8_t *buf, int buflen);
 struct RadiatorSensor *energenie_loop();
 struct RadiatorSensor *find_sensor(uint32_t sensorid);
