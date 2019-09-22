@@ -66,6 +66,7 @@ void configOpenThingsFSK() {
     writeReg(0x19, 0x43);
 
     // preamble LSB 3 bytes
+    writeReg(0x2c, 0x00);
     writeReg(0x2d, 0x03);
 
     // sync config
@@ -90,7 +91,7 @@ void configOpenThingsFSK() {
 
 
 void configEnergenieOOK() {
-    // FSK modulation scheme
+    // OOK modulation scheme
     writeReg(0x02, 0x08);
 
     // bit rate 4.8kbit hex(round(32000000 / 4800))
@@ -116,6 +117,7 @@ void configEnergenieOOK() {
     writeReg(0x19, 0x41);
 
     // preamble LSB 3 bytes
+    writeReg(0x2c, 0);
     writeReg(0x2d, 0);
 
     // sync config
@@ -125,11 +127,11 @@ void configEnergenieOOK() {
     writeReg(0x31, 0x00);
     writeReg(0x32, 0x00);
 
-    // packet config
-    writeReg(0x37, 0);
+    // packet config: fixed length
+    writeReg(0x37, 0x00);
 
-    // max payload length
-    writeReg(0x38, 13 + 8 * 17);
+    // payload length
+    writeReg(0x38, 12 + 8 * 16);
 
     // FIFO TX threshold : 30 bytes
     writeReg(0x3C, 0x1e);

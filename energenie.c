@@ -205,109 +205,62 @@ void txExercise(uint32_t sensorid) {
     tx(txbuf, sizeof(txbuf));
 }
 
-void txOOKSwitch(uint32_t address, uint32_t device_address, uint8_t on_off) {
-    uint8_t txbuf[16];
+void txOOKSwitch(uint32_t house_address, uint32_t device_address, uint8_t on_off) {
+    uint8_t txbuf[20];
     uint8_t txpos = 0;
+    uint8_t command_bits = 0;
 
-    txpos += encode_bits(address, 20, txbuf);
+    // message sync words used on subsequent retransmissions
+    txbuf[0] = 0x80;
+    txbuf[1] = 0x00;
+    txbuf[2] = 0x00;
+    txbuf[3] = 0x00;
 
+    // the actual message itself
+    txpos += 4;
+    txpos += encode_bits(house_address, 20, txbuf + txpos);
 
-    // payload += encode_bits((house_address & 0x0F0000) >> 16, 4)
-    // payload += encode_bits((house_address & 0x00FF00) >> 8,  8)
-    // payload += encode_bits((house_address & 0x0000FF),       8)
-
-
-    // // wacky-encode the address
-    // for (int i = OOK_MSG_ADDRESS_LENGTH - 1; i>=0; --i) {
-    //     uint8_t lownibble = (address & 0x01) ? 0x0E : 0x08;
-    //     uint8_t highnibble = (address & 0x02) ? 0xE0 : 0x80;
-    //     txbuf[i] = highnibble | lownibble;
-    //     address = address >> 2;
-    // }
-
-    uint8_t bits = 0;
     if (!on_off) {
-        bits = 0x00;
+        command_bits = 0x00;
     } else {
-        bits = 0x01;
+        command_bits = 0x01;
     }
     switch(device_address) {
     case 0:
-        bits |= 0x0C;
+        command_bits |= 0x0C;
         break;
     case 1:
-        bits |= 0x0E;
+        command_bits |= 0x0E;
         break;
     case 2:
-        bits |= 0x06;
+        command_bits |= 0x06;
         break;
     case 3:
-        bits |= 0x0A;
+        command_bits |= 0x0A;
         break;
     case 4:
-        bits |= 0x02;
+        command_bits |= 0x02;
         break;
     }
-    txpos += encode_bits(address, 8, txbuf + txpos);
-
-    // // encode the socket/onoff command
-    // switch (socketNum) {
-    // case 0:                     // All Sockets on Address
-    //     if (onoff) {
-    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
-    //         txbuf[11] = 0x8E;		// D2-l, D3-h
-    //     } else {
-    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// all on
-    //         txbuf[11] = 0x88;		// D2-l, D3-h
-    //     }
-    //     break;
-
-    // case 1:
-    //     if (onoff) {
-    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 on
-    //         txbuf[11] = 0xEE;		// D2-h, D3-h
-    //     } else {
-    //         txbuf[10] = 0xEE;		// D0-high, D1-h		// S1 off
-    //         txbuf[11] = 0xE8;		// D2-h, D3-l
-    //     }
-    //     break;
-
-    // case 2:
-    //     if (onoff) {
-    //         txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 on
-    //         txbuf[11] = 0xEE;		// D2-h, D3-h
-    //     } else {
-    //         txbuf[10] = 0x8E;		// D0-l, D1-h		// S2 off
-    //         txbuf[11] = 0xE8;		// D2-h, D3-l
-    //     }
-    //     break;
-
-    // case 3:
-    //     if (onoff) {
-    //         txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 on
-    //         txbuf[11] = 0xEE;		// D2-h, D3-h
-    //     } else {
-    //         txbuf[10] = 0xE8;		// D0-high, D1-l		// S3 off
-    //         txbuf[11] = 0xE8;		// D2-h, D3-l
-    //     }
-    //     break;
-
-    // case 4:
-    //     if (onoff) {
-    //         txbuf[10] = 0x88;		// D0-l, D1-l           // S4 on
-    //         txbuf[11] = 0xEE;		// D2-h, D3-h
-    //     } else {
-    //         txbuf[10] = 0x88;		// D0-l, D1-l		// S3 off
-    //         txbuf[11] = 0xE8;		// D2-h, D3-l
-    //     }
-    //     break;
-
-    // default:
-    //     return;
-    // }
+    txpos += encode_bits(command_bits, 8, txbuf + txpos);
 
     configEnergenieOOK();
-    tx(txbuf, txpos);
+
+    // send initial packet (sync bytes already sent by radio hardware)
+    writeRegMultibyte(0, txbuf+4, 12);
+
+    // send retries
+    for(int i=0; i< 8; i++) {
+        while(readReg(0x28) & 0x20) {
+            usleep(1000);
+        }
+        writeRegMultibyte(0, txbuf, 16);
+    }
+
+    // wait for transmission to finish
+    while(!(readReg(0x28) & 0x08)) {
+        usleep(1000);
+    }
     configOpenThingsFSK();
 }
 
