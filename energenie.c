@@ -242,9 +242,10 @@ void txOOKSwitch(uint32_t house_address, uint32_t device_address, uint8_t on_off
         command_bits |= 0x02;
         break;
     }
-    txpos += encode_bits(command_bits, 8, txbuf + txpos);
+    txpos += encode_bits(command_bits, 4, txbuf + txpos);
 
     configEnergenieOOK();
+    setTxMode();
 
     // send initial packet (sync bytes already sent by radio hardware)
     writeRegMultibyte(0, txbuf+4, 12);
