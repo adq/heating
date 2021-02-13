@@ -125,6 +125,12 @@ void heating_mosquitto_publish_int(struct mosquitto *mosq, uint32_t sensorid, ch
     mosquitto_publish(mosq, NULL, topic, strlen(strvalue), strvalue, 0, true);
 }
 
+void heating_mosquitto_publish_str(struct mosquitto *mosq, uint32_t sensorid, char *subtopic, char *msg) {
+    char topic[256];
+
+    sprintf(topic, "/radiator/%i/%s", sensorid, subtopic);
+    mosquitto_publish(mosq, NULL, topic, strlen(msg), msg, 0, true);
+}
 
 void heating_mosquitto_subscribe(struct mosquitto *mosq, uint32_t sensorid, char *subtopic) {
     char topic[256];
@@ -216,6 +222,12 @@ int main(int argc, char *argv[]) {
                 heating_mosquitto_publish_double(mosq, sensor->sensorid, "voltage", sensor->voltage);
             }
             heating_mosquitto_publish_int(mosq, sensor->sensorid, "last_rx_stamp", sensor->lastRxStamp);
+
+            if (sensor->desiredTemperature && (sensor->temperature < sensor->desiredTemperature)) {
+                heating_mosquitto_publish_str(mosq, sensor->sensorid, "state", "heating");
+            } else {
+                heating_mosquitto_publish_str(mosq, sensor->sensorid, "state", "off");
+            }
 
             if (!sensor->mqtt_setup) {
                 heating_mosquitto_subscribe(mosq, sensor->sensorid, "locate_sensor");
