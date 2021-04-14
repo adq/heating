@@ -72,11 +72,17 @@ void heating_mosquitto_message_radiator(const struct mosquitto_message * msg) {
         sensor->desiredTemperature = atof(value);
         sensor->desiredTemperatureTxStamp = 0;
 
+        printf("mosquitto_rx: %s %f\n", msg->topic, sensor->desiredTemperature);
+
     } else if (!strcmp(subtopic, "locate_sensor") && atoi(value)) {
         sensor->locate = 1;
 
+        printf("mosquitto_rx: %s\n", msg->topic);
+
     } else if (!strcmp(subtopic, "exercise_valve") && atoi(value)) {
         sensor->exercise_valve = 1;
+
+        printf("mosquitto_rx: %s\n", msg->topic);
     }
 }
 
@@ -91,8 +97,12 @@ void heating_mosquitto_message_boiler(const struct mosquitto_message * msg) {
         boiler_pairing_code = atoi(value);
         boiler_pair_now = true;
 
+        printf("mosquitto_rx: %s %i\n", msg->topic, boiler_pairing_code);
+
     } else if (!strcmp(msg->topic, "/boiler/desired_state")) {
         boiler_desired_state = atoi(value);
+
+        printf("mosquitto_rx: %s %i\n", msg->topic, boiler_desired_state);
     }
 }
 
@@ -240,6 +250,8 @@ int main(int argc, char *argv[]) {
         // salus boiler stuff
         if (0 != boiler_pairing_code) {
             if (boiler_pair_now) {
+                printf("boiler_tx: pair %i\n", boiler_pairing_code);
+
                 bcm2835_spi_chipSelect(CS_868MHZ);
                 txSalusPairing(boiler_pairing_code);
                 bcm2835_spi_chipSelect(CS_433MHZ);
@@ -249,6 +261,7 @@ int main(int argc, char *argv[]) {
 
             if ((time(NULL) - boiler_tx_stamp) > BOILER_TX_SECS) {
                 bcm2835_spi_chipSelect(CS_868MHZ);
+                // printf("boiler_tx: state %i\n", boiler_desired_state);
                 if (boiler_desired_state) {
                     txSalusBoilerOn(boiler_pairing_code);
                 } else {
